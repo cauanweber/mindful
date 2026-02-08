@@ -5,10 +5,10 @@ import TasksSection from '../sections/TasksSection'
 import WeeklyGoalsSection from '../sections/WeeklyGoalsSection'
 
 const sections = [
-  { id: 'diario', label: 'Diário' },
-  { id: 'notas', label: 'Notas' },
-  { id: 'tarefas', label: 'Tarefas' },
-  { id: 'metas', label: 'Metas semanais' },
+  { id: 'diary', label: 'Diário' },
+  { id: 'notes', label: 'Notas' },
+  { id: 'tasks', label: 'Tarefas' },
+  { id: 'weekly-goals', label: 'Metas semanais' },
 ]
 
 export default function Dashboard() {
@@ -37,10 +37,10 @@ export default function Dashboard() {
         ))}
       </nav>
 
-      {active === 'diario' && <DiarySection />}
-      {active === 'notas' && <NotesSection />}
-      {active === 'tarefas' && <TasksSection />}
-      {active === 'metas' && <WeeklyGoalsSection />}
+      {active === 'diary' && <DiarySection />}
+      {active === 'notes' && <NotesSection />}
+      {active === 'tasks' && <TasksSection />}
+      {active === 'weekly-goals' && <WeeklyGoalsSection />}
     </section>
   )
 }
