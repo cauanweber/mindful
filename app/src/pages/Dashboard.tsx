@@ -1,4 +1,8 @@
 import { useState } from 'react'
+import DiarySection from '../sections/DiarySection'
+import NotesSection from '../sections/NotesSection'
+import TasksSection from '../sections/TasksSection'
+import WeeklyGoalsSection from '../sections/WeeklyGoalsSection'
 
 const sections = [
   { id: 'diario', label: 'Diário' },
@@ -33,33 +37,10 @@ export default function Dashboard() {
         ))}
       </nav>
 
-      {active === 'diario' && (
-        <div>
-          <h3>Diário</h3>
-          <p>Um registro por dia para contexto e reflexões.</p>
-        </div>
-      )}
-
-      {active === 'notas' && (
-        <div>
-          <h3>Notas</h3>
-          <p>Base de conhecimento e ideias atemporais.</p>
-        </div>
-      )}
-
-      {active === 'tarefas' && (
-        <div>
-          <h3>Tarefas</h3>
-          <p>Ações pontuais que você executa uma única vez.</p>
-        </div>
-      )}
-
-      {active === 'metas' && (
-        <div>
-          <h3>Metas semanais</h3>
-          <p>Direção de médio prazo para guiar o foco da semana.</p>
-        </div>
-      )}
+      {active === 'diario' && <DiarySection />}
+      {active === 'notas' && <NotesSection />}
+      {active === 'tarefas' && <TasksSection />}
+      {active === 'metas' && <WeeklyGoalsSection />}
     </section>
   )
 }
