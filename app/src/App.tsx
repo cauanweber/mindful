@@ -1,5 +1,5 @@
-function App() {
-  return <h1>Hello, Mindful</h1>
-}
+import AppRoutes from './routes/AppRoutes'
 
-export default App
+export default function App() {
+  return <AppRoutes />
+}
