@@ -5,6 +5,12 @@ import Dashboard from '../pages/Dashboard'
 import Login from '../pages/Login'
 import Register from '../pages/Register'
 import NotFound from '../pages/NotFound'
+import {
+  DebugDiary,
+  DebugNotes,
+  DebugTasks,
+  DebugWeeklyGoals,
+} from '../pages/Debug'
 
 export default function AppRoutes() {
   return (
@@ -16,6 +22,13 @@ export default function AppRoutes() {
 
       <Route path="/app" element={<AppLayout />}>
         <Route index element={<Dashboard />} />
+      </Route>
+
+      <Route path="/debug" element={<AppLayout />}>
+        <Route path="diary" element={<DebugDiary />} />
+        <Route path="notes" element={<DebugNotes />} />
+        <Route path="tasks" element={<DebugTasks />} />
+        <Route path="weekly-goals" element={<DebugWeeklyGoals />} />
       </Route>
 
       <Route path="/" element={<Navigate to="/login" replace />} />
