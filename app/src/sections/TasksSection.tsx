@@ -130,7 +130,7 @@ export default function TasksSection() {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4">
         <input
           value={title}
           onChange={(event) => setTitle(event.target.value)}
@@ -142,12 +142,12 @@ export default function TasksSection() {
             type="date"
             value={dueDate}
             onChange={(event) => setDueDate(event.target.value)}
-            className="w-[135px] px-3 py-2.5 bg-secondary/50 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-transparent transition-all duration-200"
+            className="w-full sm:w-[140px] px-3 py-2.5 bg-secondary/50 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-transparent transition-all duration-200"
           />
           <button
             type="button"
             onClick={handleAdd}
-            className="w-9 h-9 rounded-full bg-accent text-accent-foreground flex items-center justify-center hover:bg-accent/90 transition-all duration-200"
+            className="w-10 h-10 rounded-full bg-accent text-accent-foreground flex items-center justify-center hover:bg-accent/90 transition-all duration-200"
           >
             <Plus size={18} />
           </button>
