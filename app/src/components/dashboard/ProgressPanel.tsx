@@ -1,5 +1,6 @@
 import { Calendar, CheckCircle, Target, TrendingUp } from 'lucide-react'
 import { motion } from 'motion/react'
+import useIsMobile from '../../hooks/useIsMobile'
 
 interface ProgressPanelProps {
   tasksDone: number
@@ -18,6 +19,7 @@ export default function ProgressPanel({
   notesTotal,
   diaryFilled,
 }: ProgressPanelProps) {
+  const isMobile = useIsMobile()
   const stats = [
     {
       label: 'Tarefas concluídas',
@@ -54,8 +56,10 @@ export default function ProgressPanel({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={isMobile ? { opacity: 0, y: 16 } : { opacity: 0, y: 16 }}
+      animate={!isMobile ? { opacity: 1, y: 0 } : undefined}
+      whileInView={isMobile ? { opacity: 1, y: 0 } : undefined}
+      viewport={isMobile ? { once: true, amount: 0.25 } : undefined}
       transition={{ duration: 0.45 }}
       className="bg-card rounded-2xl border border-border p-6 shadow-sm h-full flex flex-col"
     >
@@ -98,9 +102,9 @@ export default function ProgressPanel({
         {stats.map((stat, index) => (
           <motion.div
             key={stat.label}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 + index * 0.08, duration: 0.35 }}
+            initial={{ opacity: 0, x: -14 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.75 + index * 0.08, duration: 0.35, ease: 'easeOut' }}
             className="flex items-center gap-4 p-4 rounded-xl border border-border"
           >
             <div className={`w-10 h-10 rounded-xl ${stat.bgColor} flex items-center justify-center`}>

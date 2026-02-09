@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Flag, Plus } from 'lucide-react'
-import { motion } from 'motion/react'
+import { AnimatePresence, motion } from 'motion/react'
 import type { WeeklyGoal } from '../types/weeklyGoal'
 import http from '../services/http'
+import useIsMobile from '../hooks/useIsMobile'
 
 function weekStartISO() {
   const now = new Date()
@@ -15,6 +16,7 @@ function weekStartISO() {
 }
 
 export default function WeeklyGoalsSection() {
+  const isMobile = useIsMobile()
   const [goals, setGoals] = useState<WeeklyGoal[]>([])
   const [title, setTitle] = useState('')
   const [loading, setLoading] = useState(true)
@@ -84,8 +86,10 @@ export default function WeeklyGoalsSection() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={isMobile ? { opacity: 0, y: 16 } : { opacity: 0, y: 12 }}
+      animate={!isMobile ? { opacity: 1, y: 0 } : undefined}
+      whileInView={isMobile ? { opacity: 1, y: 0 } : undefined}
+      viewport={isMobile ? { once: true, amount: 0.3 } : undefined}
       transition={{ duration: 0.4 }}
       className="bg-card rounded-2xl border border-border p-6 shadow-sm h-full flex flex-col"
     >
@@ -128,37 +132,49 @@ export default function WeeklyGoalsSection() {
         {!loading && goals.length === 0 && (
           <p className="text-sm text-muted-foreground">Nenhuma meta criada.</p>
         )}
-        {goals.map((goal) => (
-          <div
-            key={goal.id}
-            className="flex items-center gap-3 p-3 rounded-xl border border-border hover:border-accent/40 transition-all duration-200"
-          >
-            <button
-              type="button"
-              onClick={() => toggleGoal(goal)}
-              className={`w-6 h-6 rounded-lg border flex items-center justify-center transition-all duration-200 ${
-                goal.done
-                  ? 'bg-accent border-accent text-accent-foreground'
-                  : 'border-muted-foreground/40 text-muted-foreground'
-              }`}
+        <AnimatePresence>
+          {goals.map((goal) => (
+            <motion.div
+              key={goal.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.25 }}
+              className="flex items-center gap-3 p-3 rounded-xl border border-border hover:border-accent/40 transition-all duration-200"
             >
-              {goal.done && <span className="text-xs">✓</span>}
-            </button>
-            <div className="flex-1">
-              <p className={`text-sm font-medium ${goal.done ? 'line-through text-muted-foreground' : ''}`}>
-                {goal.title}
-              </p>
-              <p className="text-xs text-muted-foreground">Semana {goal.weekStart.slice(0, 10)}</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => removeGoal(goal)}
-              className="text-xs text-muted-foreground hover:text-foreground"
-            >
-              Remover
-            </button>
-          </div>
-        ))}
+              <button
+                type="button"
+                onClick={() => toggleGoal(goal)}
+                className={`w-6 h-6 rounded-lg border flex items-center justify-center transition-all duration-200 ${
+                  goal.done
+                    ? 'bg-accent border-accent text-accent-foreground'
+                    : 'border-muted-foreground/40 text-muted-foreground'
+                }`}
+              >
+                {goal.done && <span className="text-xs">✓</span>}
+              </button>
+              <div className="flex-1">
+                <p
+                  className={`text-sm font-medium ${
+                    goal.done ? 'line-through text-muted-foreground' : ''
+                  }`}
+                >
+                  {goal.title}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Semana {goal.weekStart.slice(0, 10)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => removeGoal(goal)}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Remover
+              </button>
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
     </motion.div>
   )

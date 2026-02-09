@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Edit2, Plus, StickyNote, Trash2 } from 'lucide-react'
-import { motion } from 'motion/react'
+import { AnimatePresence, motion } from 'motion/react'
 import type { Note } from '../types/note'
 import http from '../services/http'
+import useIsMobile from '../hooks/useIsMobile'
 
 const NOTE_COLORS = [
   { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-900' },
@@ -12,6 +13,7 @@ const NOTE_COLORS = [
 ]
 
 export default function NotesSection() {
+  const isMobile = useIsMobile()
   const [notes, setNotes] = useState<Note[]>([])
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
@@ -101,8 +103,10 @@ export default function NotesSection() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={isMobile ? { opacity: 0, y: 16 } : { opacity: 0, y: 12 }}
+      animate={!isMobile ? { opacity: 1, y: 0 } : undefined}
+      whileInView={isMobile ? { opacity: 1, y: 0 } : undefined}
+      viewport={isMobile ? { once: true, amount: 0.3 } : undefined}
       transition={{ duration: 0.4 }}
       className="bg-card rounded-2xl border border-border p-6 shadow-sm h-full flex flex-col"
     >
@@ -153,66 +157,74 @@ export default function NotesSection() {
         {!loading && notes.length === 0 && (
           <p className="text-sm text-muted-foreground">Nenhuma nota criada.</p>
         )}
-        {notes.map((note, index) => {
-          const color = NOTE_COLORS[index % NOTE_COLORS.length]
+        <AnimatePresence>
+          {notes.map((note, index) => {
+            const color = NOTE_COLORS[index % NOTE_COLORS.length]
 
-          return (
-            <div
-              key={note.id}
-              className={`p-4 rounded-xl border ${color.bg} ${color.border} ${color.text}`}
-            >
-              {editingId === note.id ? (
-                <div className="space-y-3">
-                  <input
-                    value={editTitle}
-                    onChange={(event) => setEditTitle(event.target.value)}
-                    className="w-full px-3 py-2 bg-white/70 border border-border rounded-lg"
-                  />
-                  <textarea
-                    value={editContent}
-                    onChange={(event) => setEditContent(event.target.value)}
-                    rows={3}
-                    className="w-full px-3 py-2 bg-white/70 border border-border rounded-lg resize-none"
-                  />
-                  <div className="flex gap-2">
-                    <button type="button" onClick={() => saveEdit(note)}>
-                      Salvar
-                    </button>
-                    <button type="button" onClick={cancelEdit}>
-                      Cancelar
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-semibold">{note.title}</h4>
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => startEdit(note)}
-                        className="p-1 rounded-md hover:bg-white/60"
-                      >
-                        <Edit2 size={14} />
+            return (
+              <motion.div
+                key={note.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.25 }}
+                className={`p-4 rounded-xl border ${color.bg} ${color.border} ${color.text}`}
+              >
+                {editingId === note.id ? (
+                  <div className="space-y-3">
+                    <input
+                      value={editTitle}
+                      onChange={(event) => setEditTitle(event.target.value)}
+                      className="w-full px-3 py-2 bg-white/70 border border-border rounded-lg"
+                    />
+                    <textarea
+                      value={editContent}
+                      onChange={(event) => setEditContent(event.target.value)}
+                      rows={3}
+                      className="w-full px-3 py-2 bg-white/70 border border-border rounded-lg resize-none"
+                    />
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => saveEdit(note)}>
+                        Salvar
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => removeNote(note)}
-                        className="p-1 rounded-md hover:bg-white/60"
-                      >
-                        <Trash2 size={14} />
+                      <button type="button" onClick={cancelEdit}>
+                        Cancelar
                       </button>
                     </div>
                   </div>
-                  <p className="text-sm leading-relaxed">{note.content || 'Sem conteúdo'}</p>
-                  <p className="text-xs opacity-70 mt-2">
-                    Atualizado em {new Date(note.updatedAt).toLocaleString()}
-                  </p>
-                </>
-              )}
-            </div>
-          )
-        })}
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-semibold">{note.title}</h4>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => startEdit(note)}
+                          className="p-1 rounded-md hover:bg-white/60"
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeNote(note)}
+                          className="p-1 rounded-md hover:bg-white/60"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-sm leading-relaxed">
+                      {note.content || 'Sem conteúdo'}
+                    </p>
+                    <p className="text-xs opacity-70 mt-2">
+                      Atualizado em {new Date(note.updatedAt).toLocaleString()}
+                    </p>
+                  </>
+                )}
+              </motion.div>
+            )
+          })}
+        </AnimatePresence>
       </div>
     </motion.div>
   )

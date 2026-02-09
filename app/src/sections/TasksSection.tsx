@@ -3,8 +3,10 @@ import { Check, CheckSquare, Pencil, Plus, Trash2 } from 'lucide-react'
 import { motion } from 'motion/react'
 import type { Task } from '../types/task'
 import http from '../services/http'
+import useIsMobile from '../hooks/useIsMobile'
 
 export default function TasksSection() {
+  const isMobile = useIsMobile()
   const [tasks, setTasks] = useState<Task[]>([])
   const [title, setTitle] = useState('')
   const [dueDate, setDueDate] = useState('')
@@ -107,8 +109,10 @@ export default function TasksSection() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={isMobile ? { opacity: 0, y: 16 } : { opacity: 0, y: 12 }}
+      animate={!isMobile ? { opacity: 1, y: 0 } : undefined}
+      whileInView={isMobile ? { opacity: 1, y: 0 } : undefined}
+      viewport={isMobile ? { once: true, amount: 0.3 } : undefined}
       transition={{ duration: 0.4 }}
       className="bg-card rounded-2xl border border-border p-6 shadow-sm h-full flex flex-col"
     >
