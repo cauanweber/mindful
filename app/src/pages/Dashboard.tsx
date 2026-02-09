@@ -11,6 +11,13 @@ const sections = [
   { id: 'weekly-goals', label: 'Metas semanais' },
 ]
 
+const cardStyle: React.CSSProperties = {
+  border: '1px solid #e5e7eb',
+  borderRadius: 12,
+  padding: 16,
+  background: '#ffffff',
+}
+
 export default function Dashboard() {
   const [active, setActive] = useState(sections[0].id)
 
@@ -37,10 +44,30 @@ export default function Dashboard() {
         ))}
       </nav>
 
-      {active === 'diary' && <DiarySection />}
-      {active === 'notes' && <NotesSection />}
-      {active === 'tasks' && <TasksSection />}
-      {active === 'weekly-goals' && <WeeklyGoalsSection />}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)',
+          gap: 16,
+        }}
+      >
+        <div style={cardStyle}>
+          <DiarySection />
+        </div>
+
+        <div style={{ display: 'grid', gap: 16 }}>
+          <div style={cardStyle}>
+            <TasksSection />
+          </div>
+          <div style={cardStyle}>
+            <WeeklyGoalsSection />
+          </div>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 16, ...cardStyle }}>
+        <NotesSection />
+      </div>
     </section>
   )
 }
