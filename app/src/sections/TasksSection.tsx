@@ -1,32 +1,70 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Task } from '../types/task'
+import http from '../services/http'
 
 export default function TasksSection() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [title, setTitle] = useState('')
   const [dueDate, setDueDate] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
-  function handleAdd() {
-    if (!title.trim()) return
+  useEffect(() => {
+    let active = true
 
-    const newTask: Task = {
-      id: crypto.randomUUID(),
-      title: title.trim(),
-      dueDate: dueDate || undefined,
-      completed: false,
+    async function loadTasks() {
+      try {
+        const { data } = await http.get<Task[]>('/tasks')
+        if (active) setTasks(data)
+      } catch {
+        if (active) setError('Não foi possível carregar as tarefas.')
+      } finally {
+        if (active) setLoading(false)
+      }
     }
 
-    setTasks([newTask, ...tasks])
-    setTitle('')
-    setDueDate('')
+    loadTasks()
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  async function handleAdd() {
+    if (!title.trim()) return
+
+    try {
+      const { data } = await http.post<Task>('/tasks', {
+        title: title.trim(),
+        dueDate: dueDate || undefined,
+      })
+
+      setTasks([data, ...tasks])
+      setTitle('')
+      setDueDate('')
+    } catch {
+      setError('Não foi possível criar a tarefa.')
+    }
   }
 
-  function toggleTask(id: string) {
-    setTasks(
-      tasks.map((task) =>
-        task.id === id ? { ...task, completed: !task.completed } : task,
-      ),
-    )
+  async function toggleTask(task: Task) {
+    try {
+      const { data } = await http.patch<Task>(`/tasks/${task.id}`, {
+        completed: !task.completed,
+      })
+      setTasks(tasks.map((item) => (item.id === task.id ? data : item)))
+    } catch {
+      setError('Não foi possível atualizar a tarefa.')
+    }
+  }
+
+  async function removeTask(task: Task) {
+    try {
+      await http.delete(`/tasks/${task.id}`)
+      setTasks(tasks.filter((item) => item.id !== task.id))
+    } catch {
+      setError('Não foi possível remover a tarefa.')
+    }
   }
 
   return (
@@ -52,8 +90,11 @@ export default function TasksSection() {
         </button>
       </div>
 
+      {error && <p style={{ color: '#dc2626' }}>{error}</p>}
+
       <ul style={{ listStyle: 'none', padding: 0, marginTop: 16 }}>
-        {tasks.length === 0 && <li>Nenhuma tarefa criada.</li>}
+        {loading && <li>Carregando...</li>}
+        {!loading && tasks.length === 0 && <li>Nenhuma tarefa criada.</li>}
         {tasks.map((task) => (
           <li
             key={task.id}
@@ -69,7 +110,7 @@ export default function TasksSection() {
             <input
               type="checkbox"
               checked={task.completed}
-              onChange={() => toggleTask(task.id)}
+              onChange={() => toggleTask(task)}
             />
             <span style={{ textDecoration: task.completed ? 'line-through' : 'none' }}>
               {task.title}
@@ -77,6 +118,13 @@ export default function TasksSection() {
             {task.dueDate && (
               <small style={{ marginLeft: 'auto' }}>até {task.dueDate}</small>
             )}
+            <button
+              type="button"
+              onClick={() => removeTask(task)}
+              style={{ marginLeft: 8 }}
+            >
+              Remover
+            </button>
           </li>
         ))}
       </ul>
