@@ -1,9 +1,53 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Check, CheckSquare, Pencil, Plus, Trash2 } from 'lucide-react'
 import { motion } from 'motion/react'
 import type { Task } from '../types/task'
 import http from '../services/http'
 import useIsMobile from '../hooks/useIsMobile'
+
+function parseDateOnly(value: string) {
+  const [datePart] = value.split('T')
+  const [year, month, day] = datePart.split('-').map(Number)
+  return new Date(year, (month || 1) - 1, day || 1)
+}
+
+function startOfDay(date: Date) {
+  const d = new Date(date)
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+
+function formatShortDate(value: string) {
+  const date = parseDateOnly(value)
+  return date.toLocaleDateString('pt-BR', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+  })
+}
+
+function getTaskGroup(task: Task) {
+  if (!task.dueDate) return 'sem-data'
+
+  const today = startOfDay(new Date())
+  const due = startOfDay(parseDateOnly(task.dueDate))
+  const diffDays = Math.round((due.getTime() - today.getTime()) / 86400000)
+
+  if (diffDays < 0) return 'atrasadas'
+  if (diffDays === 0) return 'hoje'
+  if (diffDays === 1) return 'amanha'
+  if (diffDays <= 7) return 'semana'
+  return 'futuro'
+}
+
+const GROUP_LABELS: Record<string, string> = {
+  atrasadas: 'Atrasadas',
+  hoje: 'Hoje',
+  amanha: 'Amanhã',
+  semana: 'Esta semana',
+  futuro: 'Próximas',
+  'sem-data': 'Sem data',
+}
 
 export default function TasksSection() {
   const isMobile = useIsMobile()
@@ -36,6 +80,23 @@ export default function TasksSection() {
       active = false
     }
   }, [])
+
+  const groupedTasks = useMemo(() => {
+    const groups: Record<string, Task[]> = {
+      atrasadas: [],
+      hoje: [],
+      amanha: [],
+      semana: [],
+      futuro: [],
+      'sem-data': [],
+    }
+
+    tasks.forEach((task) => {
+      groups[getTaskGroup(task)].push(task)
+    })
+
+    return groups
+  }, [tasks])
 
   async function handleAdd() {
     if (!title.trim()) return
@@ -160,88 +221,104 @@ export default function TasksSection() {
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+      <div className="flex-1 overflow-y-auto space-y-4 pr-1">
         {loading && <p className="text-sm text-muted-foreground">Carregando...</p>}
         {!loading && tasks.length === 0 && (
           <p className="text-sm text-muted-foreground">Nenhuma tarefa criada.</p>
         )}
-        {tasks.map((task) => (
-          <div
-            key={task.id}
-            className="flex items-center gap-3 p-3 rounded-xl border border-border hover:border-accent/40 transition-all duration-200"
-          >
-            <button
-              type="button"
-              onClick={() => toggleTask(task)}
-              className={`w-6 h-6 rounded-lg border flex items-center justify-center transition-all duration-200 ${
-                task.completed
-                  ? 'bg-accent border-accent text-accent-foreground'
-                  : 'border-muted-foreground/40 text-muted-foreground'
-              }`}
-            >
-              {task.completed && <Check size={14} />}
-            </button>
 
-            {editingId === task.id ? (
-              <div className="flex-1 grid gap-2">
-                <input
-                  value={editTitle}
-                  onChange={(event) => setEditTitle(event.target.value)}
-                  placeholder="Título"
-                  className="px-3 py-2 bg-secondary/50 border border-input rounded-lg"
-                />
-                <input
-                  type="date"
-                  value={editDueDate}
-                  onChange={(event) => setEditDueDate(event.target.value)}
-                  className="px-3 py-2 bg-secondary/50 border border-input rounded-lg"
-                />
-                <div className="flex gap-2">
-                  <button type="button" onClick={() => saveEdit(task)} className="text-sm">
-                    Salvar
+        {Object.entries(groupedTasks).map(([groupKey, groupItems]) => {
+          if (groupItems.length === 0) return null
+
+          return (
+            <div key={groupKey} className="space-y-2">
+              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                {GROUP_LABELS[groupKey]}
+              </p>
+              {groupItems.map((task) => (
+                <div
+                  key={task.id}
+                  className="flex items-center gap-3 p-3 rounded-xl border border-border hover:border-accent/40 transition-all duration-200"
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleTask(task)}
+                    className={`w-6 h-6 rounded-lg border flex items-center justify-center transition-all duration-200 ${
+                      task.completed
+                        ? 'bg-accent border-accent text-accent-foreground'
+                        : 'border-muted-foreground/40 text-muted-foreground'
+                    }`}
+                  >
+                    {task.completed && <Check size={14} />}
                   </button>
-                  <button type="button" onClick={cancelEdit} className="text-sm">
-                    Cancelar
-                  </button>
+
+                  {editingId === task.id ? (
+                    <div className="flex-1 grid gap-2">
+                      <input
+                        value={editTitle}
+                        onChange={(event) => setEditTitle(event.target.value)}
+                        placeholder="Título"
+                        className="px-3 py-2 bg-secondary/50 border border-input rounded-lg"
+                      />
+                      <input
+                        type="date"
+                        value={editDueDate}
+                        onChange={(event) => setEditDueDate(event.target.value)}
+                        className="px-3 py-2 bg-secondary/50 border border-input rounded-lg"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => saveEdit(task)}
+                          className="text-sm"
+                        >
+                          Salvar
+                        </button>
+                        <button type="button" onClick={cancelEdit} className="text-sm">
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex-1">
+                      <p
+                        className={`text-sm font-medium ${
+                          task.completed ? 'line-through text-muted-foreground' : ''
+                        }`}
+                      >
+                        {task.title}
+                      </p>
+                      {task.dueDate && (
+                        <p className="text-xs text-muted-foreground">
+                          {formatShortDate(task.dueDate)}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {editingId !== task.id && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => startEdit(task)}
+                        className="p-2 rounded-lg hover:bg-secondary transition-all duration-200"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeTask(task)}
+                        className="p-2 rounded-lg hover:bg-secondary transition-all duration-200"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ) : (
-              <div className="flex-1">
-                <p
-                  className={`text-sm font-medium ${
-                    task.completed ? 'line-through text-muted-foreground' : ''
-                  }`}
-                >
-                  {task.title}
-                </p>
-                {task.dueDate && (
-                  <p className="text-xs text-muted-foreground">
-                    até {task.dueDate.slice(0, 10)}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {editingId !== task.id && (
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => startEdit(task)}
-                  className="p-2 rounded-lg hover:bg-secondary transition-all duration-200"
-                >
-                  <Pencil size={16} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => removeTask(task)}
-                  className="p-2 rounded-lg hover:bg-secondary transition-all duration-200"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            )}
-          </div>
-        ))}
+              ))}
+            </div>
+          )
+        })}
       </div>
     </motion.div>
   )
