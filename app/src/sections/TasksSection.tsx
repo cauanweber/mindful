@@ -349,12 +349,13 @@ export default function TasksSection() {
                       </div>
                     </div>
                   ) : (
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 min-w-0">
                         <p
-                          className={`text-sm font-medium ${
+                          className={`text-sm font-medium truncate ${
                             task.completed ? 'line-through text-muted-foreground' : ''
                           }`}
+                          title={task.title}
                         >
                           {task.title}
                         </p>
@@ -364,7 +365,7 @@ export default function TasksSection() {
                             PRIORITY_OPTIONS[1]
                           return (
                             <span
-                              className={`text-[11px] px-2 py-0.5 rounded-full border ${option.className}`}
+                              className={`text-[11px] px-2 py-0.5 rounded-full border ${option.className} shrink-0`}
                             >
                               {option.label}
                             </span>
@@ -380,7 +381,7 @@ export default function TasksSection() {
                   )}
 
                   {editingId !== task.id && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0">
                       <button
                         type="button"
                         onClick={() => startEdit(task)}
