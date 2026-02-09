@@ -2,6 +2,7 @@ import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
 import authRoutes from './routes/auth'
+import diaryRoutes from './routes/diary'
 
 const app = express()
 
@@ -13,6 +14,7 @@ app.get('/health', (_req, res) => {
 })
 
 app.use('/api/auth', authRoutes)
+app.use('/api/diary', diaryRoutes)
 
 const PORT = Number(process.env.PORT) || 3000
 
