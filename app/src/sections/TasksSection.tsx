@@ -5,6 +5,12 @@ import type { Task } from '../types/task'
 import http from '../services/http'
 import useIsMobile from '../hooks/useIsMobile'
 
+const PRIORITY_OPTIONS = [
+  { value: 'HIGH', label: 'Alta', className: 'bg-red-50 text-red-700 border-red-200' },
+  { value: 'MEDIUM', label: 'Média', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+  { value: 'LOW', label: 'Baixa', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+] as const
+
 function parseDateOnly(value: string) {
   const [datePart] = value.split('T')
   const [year, month, day] = datePart.split('-').map(Number)
@@ -54,12 +60,16 @@ export default function TasksSection() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [focusToday, setFocusToday] = useState(false)
   const [title, setTitle] = useState('')
+  const [priority, setPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('MEDIUM')
   const [dueDate, setDueDate] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState('')
   const [editDueDate, setEditDueDate] = useState('')
+  const [editPriority, setEditPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH'>(
+    'MEDIUM',
+  )
 
   useEffect(() => {
     let active = true
@@ -92,12 +102,17 @@ export default function TasksSection() {
       'sem-data': [],
     }
 
-    tasks.forEach((task) => {
+    const todayDate = startOfDay(new Date()).toISOString().slice(0, 10)
+    const filtered = focusToday
+      ? tasks.filter((task) => task.dueDate?.slice(0, 10) === todayDate)
+      : tasks
+
+    filtered.forEach((task) => {
       groups[getTaskGroup(task)].push(task)
     })
 
     return groups
-  }, [tasks])
+  }, [tasks, focusToday])
 
   async function handleAdd() {
     if (!title.trim()) return
@@ -106,10 +121,12 @@ export default function TasksSection() {
       const { data } = await http.post<Task>('/tasks', {
         title: title.trim(),
         dueDate: dueDate || undefined,
+        priority,
       })
 
       setTasks([data, ...tasks])
       setTitle('')
+      setPriority('MEDIUM')
       setDueDate('')
     } catch {
       setError('Não foi possível criar a tarefa.')
@@ -131,12 +148,14 @@ export default function TasksSection() {
     setEditingId(task.id)
     setEditTitle(task.title)
     setEditDueDate(task.dueDate ? task.dueDate.slice(0, 10) : '')
+    setEditPriority(task.priority || 'MEDIUM')
   }
 
   function cancelEdit() {
     setEditingId(null)
     setEditTitle('')
     setEditDueDate('')
+    setEditPriority('MEDIUM')
   }
 
   async function saveEdit(task: Task) {
@@ -149,6 +168,7 @@ export default function TasksSection() {
       const { data } = await http.patch<Task>(`/tasks/${task.id}`, {
         title: editTitle.trim(),
         dueDate: editDueDate || null,
+        priority: editPriority,
       })
       setTasks(tasks.map((item) => (item.id === task.id ? data : item)))
       cancelEdit()
@@ -201,24 +221,37 @@ export default function TasksSection() {
         </label>
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4">
+      <div className="flex flex-col gap-2 mb-4">
         <input
           value={title}
           onChange={(event) => setTitle(event.target.value)}
           placeholder="Nova tarefa"
-          className="flex-1 min-w-0 px-4 py-2.5 bg-secondary/50 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-transparent transition-all duration-200"
+          className="w-full px-4 py-2.5 bg-secondary/50 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-transparent transition-all duration-200"
         />
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <select
+            value={priority}
+            onChange={(event) =>
+              setPriority(event.target.value as 'LOW' | 'MEDIUM' | 'HIGH')
+            }
+            className="w-[120px] px-3 py-2.5 bg-secondary/50 border border-input rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-transparent transition-all duration-200"
+          >
+            {PRIORITY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
           <input
             type="date"
             value={dueDate}
             onChange={(event) => setDueDate(event.target.value)}
-            className="w-full sm:w-[140px] px-3 py-2.5 bg-secondary/50 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-transparent transition-all duration-200"
+            className="w-[150px] px-3 py-2.5 bg-secondary/50 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-transparent transition-all duration-200"
           />
           <button
             type="button"
             onClick={handleAdd}
-            className="w-10 h-10 rounded-full bg-accent text-accent-foreground flex items-center justify-center hover:bg-accent/90 transition-all duration-200"
+            className="w-11 h-11 rounded-full bg-accent text-accent-foreground flex items-center justify-center hover:bg-accent/90 transition-all duration-200"
           >
             <Plus size={18} />
           </button>
@@ -270,6 +303,19 @@ export default function TasksSection() {
                         placeholder="Título"
                         className="px-3 py-2 bg-secondary/50 border border-input rounded-lg"
                       />
+                      <select
+                        value={editPriority}
+                        onChange={(event) =>
+                          setEditPriority(event.target.value as 'LOW' | 'MEDIUM' | 'HIGH')
+                        }
+                        className="px-3 py-2 bg-secondary/50 border border-input rounded-lg text-sm"
+                      >
+                        {PRIORITY_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
                       <input
                         type="date"
                         value={editDueDate}
@@ -291,13 +337,27 @@ export default function TasksSection() {
                     </div>
                   ) : (
                     <div className="flex-1">
-                      <p
-                        className={`text-sm font-medium ${
-                          task.completed ? 'line-through text-muted-foreground' : ''
-                        }`}
-                      >
-                        {task.title}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p
+                          className={`text-sm font-medium ${
+                            task.completed ? 'line-through text-muted-foreground' : ''
+                          }`}
+                        >
+                          {task.title}
+                        </p>
+                        {(() => {
+                          const option =
+                            PRIORITY_OPTIONS.find((item) => item.value === task.priority) ||
+                            PRIORITY_OPTIONS[1]
+                          return (
+                            <span
+                              className={`text-[11px] px-2 py-0.5 rounded-full border ${option.className}`}
+                            >
+                              {option.label}
+                            </span>
+                          )
+                        })()}
+                      </div>
                       {task.dueDate && (
                         <p className="text-xs text-muted-foreground">
                           {formatShortDate(task.dueDate)}
