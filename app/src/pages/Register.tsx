@@ -1,13 +1,17 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 
 export default function Register() {
+  const navigate = useNavigate()
+  const { signUp } = useAuth()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
     if (!name.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
@@ -25,7 +29,13 @@ export default function Register() {
       return
     }
 
-    setError('')
+    try {
+      await signUp(name, email, password)
+      setError('')
+      navigate('/app')
+    } catch {
+      setError('Não foi possível criar a conta. Tente novamente.')
+    }
   }
 
   return (

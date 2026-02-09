@@ -5,6 +5,7 @@ import Dashboard from '../pages/Dashboard'
 import Login from '../pages/Login'
 import Register from '../pages/Register'
 import NotFound from '../pages/NotFound'
+import ProtectedRoute from './ProtectedRoute'
 import {
   DebugDiary,
   DebugNotes,
@@ -20,8 +21,10 @@ export default function AppRoutes() {
         <Route path="/register" element={<Register />} />
       </Route>
 
-      <Route path="/app" element={<AppLayout />}>
-        <Route index element={<Dashboard />} />
+      <Route element={<ProtectedRoute />}>
+        <Route path="/app" element={<AppLayout />}>
+          <Route index element={<Dashboard />} />
+        </Route>
       </Route>
 
       <Route path="/debug" element={<AppLayout />}>

@@ -1,18 +1,28 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 
 export default function Login() {
+  const navigate = useNavigate()
+  const { signIn } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!email.trim() || !password.trim()) {
       setError('Preencha e-mail e senha.')
       return
     }
 
-    setError('')
+    try {
+      await signIn(email, password)
+      setError('')
+      navigate('/app')
+    } catch {
+      setError('Não foi possível entrar. Verifique seus dados.')
+    }
   }
 
   return (
