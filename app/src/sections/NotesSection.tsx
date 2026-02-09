@@ -1,28 +1,59 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Note } from '../types/note'
-
-function nowISO() {
-  return new Date().toISOString()
-}
+import http from '../services/http'
 
 export default function NotesSection() {
   const [notes, setNotes] = useState<Note[]>([])
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
-  function handleAdd() {
-    if (!title.trim() && !content.trim()) return
+  useEffect(() => {
+    let active = true
 
-    const newNote: Note = {
-      id: crypto.randomUUID(),
-      title: title.trim() || 'Sem título',
-      content: content.trim(),
-      updatedAt: nowISO(),
+    async function loadNotes() {
+      try {
+        const { data } = await http.get<Note[]>('/notes')
+        if (active) setNotes(data)
+      } catch {
+        if (active) setError('Não foi possível carregar as notas.')
+      } finally {
+        if (active) setLoading(false)
+      }
     }
 
-    setNotes([newNote, ...notes])
-    setTitle('')
-    setContent('')
+    loadNotes()
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  async function handleAdd() {
+    if (!title.trim() && !content.trim()) return
+
+    try {
+      const { data } = await http.post<Note>('/notes', {
+        title: title.trim() || 'Sem título',
+        content: content.trim(),
+      })
+
+      setNotes([data, ...notes])
+      setTitle('')
+      setContent('')
+    } catch {
+      setError('Não foi possível criar a nota.')
+    }
+  }
+
+  async function removeNote(note: Note) {
+    try {
+      await http.delete(`/notes/${note.id}`)
+      setNotes(notes.filter((item) => item.id !== note.id))
+    } catch {
+      setError('Não foi possível remover a nota.')
+    }
   }
 
   return (
@@ -49,8 +80,11 @@ export default function NotesSection() {
         </button>
       </div>
 
+      {error && <p style={{ color: '#dc2626' }}>{error}</p>}
+
       <ul style={{ listStyle: 'none', padding: 0, marginTop: 16 }}>
-        {notes.length === 0 && <li>Nenhuma nota criada.</li>}
+        {loading && <li>Carregando...</li>}
+        {!loading && notes.length === 0 && <li>Nenhuma nota criada.</li>}
         {notes.map((note) => (
           <li
             key={note.id}
@@ -59,6 +93,11 @@ export default function NotesSection() {
             <strong>{note.title}</strong>
             <p style={{ margin: '8px 0' }}>{note.content || 'Sem conteúdo'}</p>
             <small>Atualizado em {new Date(note.updatedAt).toLocaleString()}</small>
+            <div style={{ marginTop: 8 }}>
+              <button type="button" onClick={() => removeNote(note)}>
+                Remover
+              </button>
+            </div>
           </li>
         ))}
       </ul>
