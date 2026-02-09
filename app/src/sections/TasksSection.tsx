@@ -70,6 +70,7 @@ export default function TasksSection() {
   const [editPriority, setEditPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH'>(
     'MEDIUM',
   )
+  const [lastCreatedId, setLastCreatedId] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -128,6 +129,8 @@ export default function TasksSection() {
       setTitle('')
       setPriority('MEDIUM')
       setDueDate('')
+      setLastCreatedId(data.id)
+      setTimeout(() => setLastCreatedId(null), 1200)
     } catch {
       setError('Não foi possível criar a tarefa.')
     }
@@ -248,13 +251,14 @@ export default function TasksSection() {
             onChange={(event) => setDueDate(event.target.value)}
             className="w-[150px] px-3 py-2.5 bg-secondary/50 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-transparent transition-all duration-200"
           />
-          <button
+          <motion.button
             type="button"
             onClick={handleAdd}
             className="w-11 h-11 rounded-full bg-accent text-accent-foreground flex items-center justify-center hover:bg-accent/90 transition-all duration-200"
+            whileTap={{ scale: 0.92 }}
           >
             <Plus size={18} />
-          </button>
+          </motion.button>
         </div>
       </div>
 
@@ -278,11 +282,20 @@ export default function TasksSection() {
               <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
                 {GROUP_LABELS[groupKey]}
               </p>
-              {groupItems.map((task) => (
-                <div
-                  key={task.id}
-                  className="flex items-center gap-3 p-3 rounded-xl border border-border hover:border-accent/40 transition-all duration-200"
-                >
+              <motion.div layout="position" className="space-y-2">
+                {groupItems.map((task) => (
+                  <motion.div
+                    key={task.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    className="flex items-center gap-3 p-3 rounded-xl border border-border hover:border-accent/40 transition-all duration-200"
+                  style={
+                    lastCreatedId === task.id
+                      ? { boxShadow: '0 0 0 1px rgba(37, 99, 235, 0.15)' }
+                      : undefined
+                  }
+                  >
                   <button
                     type="button"
                     onClick={() => toggleTask(task)}
@@ -384,8 +397,9 @@ export default function TasksSection() {
                       </button>
                     </div>
                   )}
-                </div>
-              ))}
+                  </motion.div>
+                ))}
+              </motion.div>
             </div>
           )
         })}
