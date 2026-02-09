@@ -8,6 +8,9 @@ export default function TasksSection() {
   const [dueDate, setDueDate] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const [editDueDate, setEditDueDate] = useState('')
 
   useEffect(() => {
     let active = true
@@ -53,6 +56,37 @@ export default function TasksSection() {
         completed: !task.completed,
       })
       setTasks(tasks.map((item) => (item.id === task.id ? data : item)))
+    } catch {
+      setError('Não foi possível atualizar a tarefa.')
+    }
+  }
+
+  function startEdit(task: Task) {
+    setEditingId(task.id)
+    setEditTitle(task.title)
+    setEditDueDate(task.dueDate ? task.dueDate.slice(0, 10) : '')
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setEditTitle('')
+    setEditDueDate('')
+  }
+
+  async function saveEdit(task: Task) {
+    if (!editTitle.trim()) {
+      setError('Título obrigatório.')
+      return
+    }
+
+    try {
+      const { data } = await http.patch<Task>(`/tasks/${task.id}`, {
+        title: editTitle.trim(),
+        dueDate: editDueDate || null,
+      })
+      setTasks(tasks.map((item) => (item.id === task.id ? data : item)))
+      cancelEdit()
+      setError('')
     } catch {
       setError('Não foi possível atualizar a tarefa.')
     }
@@ -112,19 +146,53 @@ export default function TasksSection() {
               checked={task.completed}
               onChange={() => toggleTask(task)}
             />
-            <span style={{ textDecoration: task.completed ? 'line-through' : 'none' }}>
-              {task.title}
-            </span>
-            {task.dueDate && (
-              <small style={{ marginLeft: 'auto' }}>até {task.dueDate}</small>
+            {editingId === task.id ? (
+              <div style={{ flex: 1, display: 'grid', gap: 6 }}>
+                <input
+                  value={editTitle}
+                  onChange={(event) => setEditTitle(event.target.value)}
+                  placeholder="Título"
+                />
+                <input
+                  type="date"
+                  value={editDueDate}
+                  onChange={(event) => setEditDueDate(event.target.value)}
+                />
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button type="button" onClick={() => saveEdit(task)}>
+                    Salvar
+                  </button>
+                  <button type="button" onClick={cancelEdit}>
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <span style={{ textDecoration: task.completed ? 'line-through' : 'none' }}>
+                  {task.title}
+                </span>
+                {task.dueDate && (
+                  <small style={{ marginLeft: 'auto' }}>
+                    até {task.dueDate.slice(0, 10)}
+                  </small>
+                )}
+                <button
+                  type="button"
+                  onClick={() => startEdit(task)}
+                  style={{ marginLeft: 8 }}
+                >
+                  Editar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => removeTask(task)}
+                  style={{ marginLeft: 8 }}
+                >
+                  Remover
+                </button>
+              </>
             )}
-            <button
-              type="button"
-              onClick={() => removeTask(task)}
-              style={{ marginLeft: 8 }}
-            >
-              Remover
-            </button>
           </li>
         ))}
       </ul>

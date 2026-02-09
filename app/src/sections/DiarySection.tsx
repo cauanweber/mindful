@@ -17,6 +17,7 @@ export default function DiarySection() {
   const [saved, setSaved] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -47,6 +48,7 @@ export default function DiarySection() {
 
   async function handleSave() {
     try {
+      setSaving(true)
       const { data } = await http.put<DiaryEntry>('/diary/today', {
         content: entry.content,
       })
@@ -56,6 +58,8 @@ export default function DiarySection() {
       setTimeout(() => setSaved(false), 1200)
     } catch {
       setError('Não foi possível salvar o diário.')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -76,10 +80,11 @@ export default function DiarySection() {
         disabled={loading}
       />
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 12 }}>
-        <button type="button" onClick={handleSave}>
+        <button type="button" onClick={handleSave} disabled={loading || saving}>
           Salvar
         </button>
-        {saved && <span style={{ color: '#16a34a' }}>Salvo</span>}
+        {saving && <span>Salvando...</span>}
+        {!saving && saved && <span style={{ color: '#16a34a' }}>Salvo</span>}
       </div>
       {error && <p style={{ color: '#dc2626' }}>{error}</p>}
     </div>
