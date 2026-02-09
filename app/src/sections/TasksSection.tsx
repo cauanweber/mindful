@@ -49,9 +49,10 @@ const GROUP_LABELS: Record<string, string> = {
   'sem-data': 'Sem data',
 }
 
-export default function TasksSection({ focusToday = false }: { focusToday?: boolean }) {
+export default function TasksSection() {
   const isMobile = useIsMobile()
   const [tasks, setTasks] = useState<Task[]>([])
+  const [focusToday, setFocusToday] = useState(false)
   const [title, setTitle] = useState('')
   const [dueDate, setDueDate] = useState('')
   const [loading, setLoading] = useState(true)
@@ -194,6 +195,15 @@ export default function TasksSection({ focusToday = false }: { focusToday?: bool
             </p>
           </div>
         </div>
+        <label className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground shadow-sm">
+          <input
+            type="checkbox"
+            className="accent-[color:var(--accent)]"
+            checked={focusToday}
+            onChange={(event) => setFocusToday(event.target.checked)}
+          />
+          Somente hoje
+        </label>
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4">
