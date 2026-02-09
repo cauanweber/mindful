@@ -83,6 +83,7 @@ export default function WeeklyGoalsSection() {
   }
 
   const completedCount = goals.filter((goal) => goal.done).length
+  const progress = goals.length ? Math.round((completedCount / goals.length) * 100) : 0
 
   return (
     <motion.div
@@ -102,6 +103,19 @@ export default function WeeklyGoalsSection() {
           <p className="text-muted-foreground text-[0.8125rem]">
             {completedCount}/{goals.length} concluídas
           </p>
+        </div>
+      </div>
+
+      <div className="mb-4 rounded-xl bg-secondary/60 border border-border p-3">
+        <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+          <span>Progresso da semana</span>
+          <span>{progress}%</span>
+        </div>
+        <div className="h-2 rounded-full bg-muted">
+          <div
+            className="h-2 rounded-full bg-accent transition-all duration-300"
+            style={{ width: `${progress}%` }}
+          />
         </div>
       </div>
 
