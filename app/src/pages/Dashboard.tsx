@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import http from '../services/http'
 import DiarySection from '../sections/DiarySection'
 import NotesSection from '../sections/NotesSection'
@@ -9,6 +9,7 @@ import type { Task } from '../types/task'
 import type { WeeklyGoal } from '../types/weeklyGoal'
 import type { Note } from '../types/note'
 import type { DiaryEntry } from '../types/diary'
+import useMediaQuery from '../hooks/useMediaQuery'
 
 export default function Dashboard() {
   const [summary, setSummary] = useState({
@@ -20,6 +21,13 @@ export default function Dashboard() {
     diaryFilled: false,
   })
   const [summaryError, setSummaryError] = useState('')
+  const isMobile = useMediaQuery('(max-width: 767px)')
+  const isTablet = useMediaQuery('(min-width: 768px) and (max-width: 1023px)')
+  const layout = useMemo(() => {
+    if (isMobile) return 'mobile'
+    if (isTablet) return 'tablet'
+    return 'desktop'
+  }, [isMobile, isTablet])
 
   useEffect(() => {
     let active = true
@@ -68,7 +76,8 @@ export default function Dashboard() {
         </div>
       )}
 
-      <div className="hidden lg:grid lg:grid-cols-12 gap-6">
+      {layout === 'desktop' && (
+        <div className="grid grid-cols-12 gap-6">
         <div className="lg:col-span-4 space-y-6">
           <div className="h-[520px]">
             <DiarySection />
@@ -100,8 +109,10 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+      )}
 
-      <div className="hidden md:grid lg:hidden md:grid-cols-2 gap-6">
+      {layout === 'tablet' && (
+        <div className="grid grid-cols-2 gap-6">
         <div className="h-[480px]">
           <DiarySection />
         </div>
@@ -114,7 +125,7 @@ export default function Dashboard() {
         <div className="h-[480px]">
           <NotesSection />
         </div>
-        <div className="md:col-span-2 h-[520px]">
+        <div className="col-span-2 h-[520px]">
           <ProgressPanel
             tasksDone={summary.tasksDone}
             tasksTotal={summary.tasksTotal}
@@ -125,8 +136,10 @@ export default function Dashboard() {
           />
         </div>
       </div>
+      )}
 
-      <div className="md:hidden space-y-6">
+      {layout === 'mobile' && (
+        <div className="space-y-6">
         <div className="h-[520px]">
           <ProgressPanel
             tasksDone={summary.tasksDone}
@@ -150,6 +163,7 @@ export default function Dashboard() {
           <NotesSection />
         </div>
       </div>
+      )}
     </section>
   )
 }
