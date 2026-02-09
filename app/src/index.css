@@ -28,3 +28,31 @@ input,
 textarea {
   font-family: inherit;
 }
+
+input,
+textarea {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: inherit;
+}
+
+input:focus,
+textarea:focus {
+  outline: 2px solid #0f172a;
+  outline-offset: 2px;
+}
+
+button {
+  border: 0;
+  border-radius: 10px;
+  background: #0f172a;
+  color: #f8fafc;
+  padding: 10px 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #1f2937;
+}
