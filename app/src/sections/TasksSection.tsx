@@ -49,7 +49,7 @@ const GROUP_LABELS: Record<string, string> = {
   'sem-data': 'Sem data',
 }
 
-export default function TasksSection() {
+export default function TasksSection({ focusToday = false }: { focusToday?: boolean }) {
   const isMobile = useIsMobile()
   const [tasks, setTasks] = useState<Task[]>([])
   const [title, setTitle] = useState('')
@@ -91,12 +91,17 @@ export default function TasksSection() {
       'sem-data': [],
     }
 
-    tasks.forEach((task) => {
+    const todayDate = startOfDay(new Date()).toISOString().slice(0, 10)
+    const filtered = focusToday
+      ? tasks.filter((task) => task.dueDate?.slice(0, 10) === todayDate)
+      : tasks
+
+    filtered.forEach((task) => {
       groups[getTaskGroup(task)].push(task)
     })
 
     return groups
-  }, [tasks])
+  }, [tasks, focusToday])
 
   async function handleAdd() {
     if (!title.trim()) return

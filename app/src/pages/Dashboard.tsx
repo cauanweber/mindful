@@ -11,6 +11,7 @@ import type { Note } from '../types/note'
 import type { DiaryEntry } from '../types/diary'
 
 export default function Dashboard() {
+  const [focusToday, setFocusToday] = useState(false)
   const [summary, setSummary] = useState({
     tasksTotal: 0,
     tasksDone: 0,
@@ -62,11 +63,23 @@ export default function Dashboard() {
 
   return (
     <section>
-      {summaryError && (
-        <div className="mb-6 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-destructive">
-          {summaryError}
-        </div>
-      )}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        {summaryError && (
+          <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-destructive">
+            {summaryError}
+          </div>
+        )}
+
+        <label className="ml-auto inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-sm text-muted-foreground shadow-sm">
+          <input
+            type="checkbox"
+            className="accent-[color:var(--accent)]"
+            checked={focusToday}
+            onChange={(event) => setFocusToday(event.target.checked)}
+          />
+          Somente hoje
+        </label>
+      </div>
 
       <div className="hidden lg:grid lg:grid-cols-12 gap-6">
         <div className="lg:col-span-4 space-y-6">
@@ -80,7 +93,7 @@ export default function Dashboard() {
 
         <div className="lg:col-span-4 space-y-6">
           <div className="h-[520px]">
-            <TasksSection />
+            <TasksSection focusToday={focusToday} />
           </div>
           <div className="h-[520px]">
             <WeeklyGoalsSection />
@@ -106,7 +119,7 @@ export default function Dashboard() {
           <DiarySection />
         </div>
         <div className="h-[480px]">
-          <TasksSection />
+          <TasksSection focusToday={focusToday} />
         </div>
         <div className="h-[480px]">
           <WeeklyGoalsSection />
@@ -141,7 +154,7 @@ export default function Dashboard() {
           <DiarySection />
         </div>
         <div className="h-[440px]">
-          <TasksSection />
+          <TasksSection focusToday={focusToday} />
         </div>
         <div className="h-[440px]">
           <WeeklyGoalsSection />
