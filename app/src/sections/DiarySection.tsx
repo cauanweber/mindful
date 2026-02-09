@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { DiaryEntry } from '../types/diary'
+import http from '../services/http'
 
 function todayISO() {
   const now = new Date()
@@ -14,10 +15,48 @@ export default function DiarySection() {
     content: '',
   })
   const [saved, setSaved] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
-  function handleSave() {
-    setSaved(true)
-    setTimeout(() => setSaved(false), 1200)
+  useEffect(() => {
+    let active = true
+
+    async function loadEntry() {
+      try {
+        const { data } = await http.get<DiaryEntry | null>('/diary/today')
+        if (active && data) {
+          setEntry({
+            id: data.id,
+            date: data.date,
+            content: data.content,
+          })
+        }
+      } catch {
+        if (active) setError('Não foi possível carregar o diário.')
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+
+    loadEntry()
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  async function handleSave() {
+    try {
+      const { data } = await http.put<DiaryEntry>('/diary/today', {
+        content: entry.content,
+      })
+      setEntry({ id: data.id, date: data.date, content: data.content })
+      setSaved(true)
+      setError('')
+      setTimeout(() => setSaved(false), 1200)
+    } catch {
+      setError('Não foi possível salvar o diário.')
+    }
   }
 
   return (
@@ -34,6 +73,7 @@ export default function DiarySection() {
         placeholder="Como foi o seu dia?"
         rows={6}
         style={{ width: '100%', padding: 12, marginTop: 8 }}
+        disabled={loading}
       />
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 12 }}>
         <button type="button" onClick={handleSave}>
@@ -41,6 +81,7 @@ export default function DiarySection() {
         </button>
         {saved && <span style={{ color: '#16a34a' }}>Salvo</span>}
       </div>
+      {error && <p style={{ color: '#dc2626' }}>{error}</p>}
     </div>
   )
 }
