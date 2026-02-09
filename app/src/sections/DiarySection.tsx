@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import { BookOpen, Calendar, Plus } from 'lucide-react'
+import { motion } from 'motion/react'
 import type { DiaryEntry } from '../types/diary'
 import http from '../services/http'
 
@@ -63,30 +65,75 @@ export default function DiarySection() {
     }
   }
 
-  return (
-    <div>
-      <h3>Diário</h3>
-      <p>Um registro por dia para contexto e reflexões.</p>
+  const todayLabel = new Date(entry.date).toLocaleDateString('pt-BR', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
 
-      <label style={{ display: 'block', fontWeight: 600, marginTop: 12 }}>
-        {entry.date}
-      </label>
-      <textarea
-        value={entry.content}
-        onChange={(event) => setEntry({ ...entry, content: event.target.value })}
-        placeholder="Como foi o seu dia?"
-        rows={6}
-        style={{ width: '100%', padding: 12, marginTop: 8 }}
-        disabled={loading}
-      />
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 12 }}>
-        <button type="button" onClick={handleSave} disabled={loading || saving}>
-          Salvar
-        </button>
-        {saving && <span>Salvando...</span>}
-        {!saving && saved && <span style={{ color: '#16a34a' }}>Salvo</span>}
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="bg-card rounded-2xl border border-border p-6 shadow-sm h-full flex flex-col"
+    >
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
+          <BookOpen size={20} className="text-accent" />
+        </div>
+        <div>
+          <h3 className="text-[1.125rem]">Diário</h3>
+          <p className="text-muted-foreground text-[0.8125rem]">
+            Um registro por dia
+          </p>
+        </div>
       </div>
-      {error && <p style={{ color: '#dc2626' }}>{error}</p>}
-    </div>
+
+      <div className="flex items-center gap-2 mb-4 text-muted-foreground text-[0.875rem]">
+        <Calendar size={16} />
+        <span>{todayLabel}</span>
+      </div>
+
+      <div className="flex-1 flex flex-col gap-3">
+        <textarea
+          value={entry.content}
+          onChange={(event) => setEntry({ ...entry, content: event.target.value })}
+          placeholder="Como foi o seu dia? O que você aprendeu?"
+          className="w-full h-full min-h-[180px] px-4 py-3 bg-secondary/50 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-transparent transition-all duration-200 resize-none"
+          style={{ fontSize: '0.9375rem', lineHeight: '1.6' }}
+          disabled={loading}
+        />
+
+        {error && (
+          <div className="text-center py-2 px-4 bg-destructive/10 text-destructive rounded-lg text-sm">
+            {error}
+          </div>
+        )}
+
+        {saving && (
+          <div className="text-center py-2 px-4 bg-muted text-muted-foreground rounded-lg text-sm">
+            Salvando...
+          </div>
+        )}
+
+        {!saving && saved && (
+          <div className="text-center py-2 px-4 bg-accent/10 text-accent rounded-lg text-sm">
+            Entrada salva ✓
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={loading || saving}
+          className="mt-auto w-full bg-accent text-accent-foreground py-2.5 px-4 rounded-xl hover:bg-accent/90 transition-all duration-200 flex items-center justify-center gap-2"
+        >
+          <Plus size={18} />
+          <span>Salvar</span>
+        </button>
+      </div>
+    </motion.div>
   )
 }

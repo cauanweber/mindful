@@ -4,17 +4,11 @@ import DiarySection from '../sections/DiarySection'
 import NotesSection from '../sections/NotesSection'
 import TasksSection from '../sections/TasksSection'
 import WeeklyGoalsSection from '../sections/WeeklyGoalsSection'
+import ProgressPanel from '../components/dashboard/ProgressPanel'
 import type { Task } from '../types/task'
 import type { WeeklyGoal } from '../types/weeklyGoal'
 import type { Note } from '../types/note'
 import type { DiaryEntry } from '../types/diary'
-
-const cardStyle: React.CSSProperties = {
-  border: '1px solid #e5e7eb',
-  borderRadius: 12,
-  padding: 16,
-  background: '#ffffff',
-}
 
 export default function Dashboard() {
   const [summary, setSummary] = useState({
@@ -68,51 +62,93 @@ export default function Dashboard() {
 
   return (
     <section>
-      <h2>Dashboard</h2>
+      {summaryError && (
+        <div className="mb-6 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-destructive">
+          {summaryError}
+        </div>
+      )}
 
-      <div style={{ ...cardStyle, marginBottom: 16 }}>
-        <h3>Progresso pessoal</h3>
-        {summaryError ? (
-          <p style={{ color: '#dc2626' }}>{summaryError}</p>
-        ) : (
-          <div style={{ display: 'grid', gap: 8 }}>
-            <span>
-              Diário de hoje: {summary.diaryFilled ? 'preenchido' : 'pendente'}
-            </span>
-            <span>
-              Tarefas: {summary.tasksDone}/{summary.tasksTotal} concluídas
-            </span>
-            <span>
-              Metas semanais: {summary.goalsDone}/{summary.goalsTotal} concluídas
-            </span>
-            <span>Notas: {summary.notesTotal}</span>
+      <div className="hidden lg:grid lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-4 space-y-6">
+          <div className="h-[520px]">
+            <DiarySection />
           </div>
-        )}
-      </div>
-
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)',
-          gap: 16,
-        }}
-      >
-        <div style={cardStyle}>
-          <DiarySection />
+          <div className="h-[520px]">
+            <NotesSection />
+          </div>
         </div>
 
-        <div style={{ display: 'grid', gap: 16 }}>
-          <div style={cardStyle}>
+        <div className="lg:col-span-4 space-y-6">
+          <div className="h-[520px]">
             <TasksSection />
           </div>
-          <div style={cardStyle}>
+          <div className="h-[520px]">
             <WeeklyGoalsSection />
           </div>
         </div>
+
+        <div className="lg:col-span-4">
+          <div className="h-[1064px]">
+            <ProgressPanel
+              tasksDone={summary.tasksDone}
+              tasksTotal={summary.tasksTotal}
+              goalsDone={summary.goalsDone}
+              goalsTotal={summary.goalsTotal}
+              notesTotal={summary.notesTotal}
+              diaryFilled={summary.diaryFilled}
+            />
+          </div>
+        </div>
       </div>
 
-      <div style={{ marginTop: 16, ...cardStyle }}>
-        <NotesSection />
+      <div className="hidden md:grid lg:hidden md:grid-cols-2 gap-6">
+        <div className="h-[480px]">
+          <DiarySection />
+        </div>
+        <div className="h-[480px]">
+          <TasksSection />
+        </div>
+        <div className="h-[480px]">
+          <WeeklyGoalsSection />
+        </div>
+        <div className="h-[480px]">
+          <NotesSection />
+        </div>
+        <div className="md:col-span-2 h-[520px]">
+          <ProgressPanel
+            tasksDone={summary.tasksDone}
+            tasksTotal={summary.tasksTotal}
+            goalsDone={summary.goalsDone}
+            goalsTotal={summary.goalsTotal}
+            notesTotal={summary.notesTotal}
+            diaryFilled={summary.diaryFilled}
+          />
+        </div>
+      </div>
+
+      <div className="md:hidden space-y-6">
+        <div className="h-[440px]">
+          <DiarySection />
+        </div>
+        <div className="h-[440px]">
+          <TasksSection />
+        </div>
+        <div className="h-[440px]">
+          <WeeklyGoalsSection />
+        </div>
+        <div className="h-[440px]">
+          <NotesSection />
+        </div>
+        <div className="h-[520px]">
+          <ProgressPanel
+            tasksDone={summary.tasksDone}
+            tasksTotal={summary.tasksTotal}
+            goalsDone={summary.goalsDone}
+            goalsTotal={summary.goalsTotal}
+            notesTotal={summary.notesTotal}
+            diaryFilled={summary.diaryFilled}
+          />
+        </div>
       </div>
     </section>
   )

@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Flag, Plus } from 'lucide-react'
+import { motion } from 'motion/react'
 import type { WeeklyGoal } from '../types/weeklyGoal'
 import http from '../services/http'
 
@@ -78,59 +80,86 @@ export default function WeeklyGoalsSection() {
     }
   }
 
-  return (
-    <div>
-      <h3>Metas semanais</h3>
-      <p>Direção de médio prazo para guiar o foco da semana.</p>
+  const completedCount = goals.filter((goal) => goal.done).length
 
-      <div style={{ display: 'grid', gap: 8, maxWidth: 420 }}>
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="bg-card rounded-2xl border border-border p-6 shadow-sm h-full flex flex-col"
+    >
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
+          <Flag size={20} className="text-accent" />
+        </div>
+        <div>
+          <h3 className="text-[1.125rem]">Metas semanais</h3>
+          <p className="text-muted-foreground text-[0.8125rem]">
+            {completedCount}/{goals.length} concluídas
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 mb-4">
         <input
           value={title}
           onChange={(event) => setTitle(event.target.value)}
           placeholder="Nova meta da semana"
-          style={{ padding: 10 }}
+          className="flex-1 px-4 py-2.5 bg-secondary/50 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-transparent transition-all duration-200"
         />
-        <button type="button" onClick={handleAdd}>
-          Adicionar meta
+        <button
+          type="button"
+          onClick={handleAdd}
+          className="p-2.5 bg-accent text-accent-foreground rounded-xl hover:bg-accent/90 transition-all duration-200"
+        >
+          <Plus size={18} />
         </button>
       </div>
 
-      {error && <p style={{ color: '#dc2626' }}>{error}</p>}
+      {error && (
+        <div className="text-center py-2 px-4 bg-destructive/10 text-destructive rounded-lg text-sm mb-3">
+          {error}
+        </div>
+      )}
 
-      <ul style={{ listStyle: 'none', padding: 0, marginTop: 16 }}>
-        {loading && <li>Carregando...</li>}
-        {!loading && goals.length === 0 && <li>Nenhuma meta criada.</li>}
+      <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+        {loading && <p className="text-sm text-muted-foreground">Carregando...</p>}
+        {!loading && goals.length === 0 && (
+          <p className="text-sm text-muted-foreground">Nenhuma meta criada.</p>
+        )}
         {goals.map((goal) => (
-          <li
+          <div
             key={goal.id}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: 8,
-              border: '1px solid #e5e7eb',
-              marginTop: 8,
-            }}
+            className="flex items-center gap-3 p-3 rounded-xl border border-border hover:border-accent/40 transition-all duration-200"
           >
-            <input
-              type="checkbox"
-              checked={goal.done}
-              onChange={() => toggleGoal(goal)}
-            />
-            <span style={{ textDecoration: goal.done ? 'line-through' : 'none' }}>
-              {goal.title}
-            </span>
-            <small style={{ marginLeft: 'auto' }}>Semana {goal.weekStart}</small>
+            <button
+              type="button"
+              onClick={() => toggleGoal(goal)}
+              className={`w-6 h-6 rounded-lg border flex items-center justify-center transition-all duration-200 ${
+                goal.done
+                  ? 'bg-accent border-accent text-accent-foreground'
+                  : 'border-muted-foreground/40 text-muted-foreground'
+              }`}
+            >
+              {goal.done && <span className="text-xs">✓</span>}
+            </button>
+            <div className="flex-1">
+              <p className={`text-sm font-medium ${goal.done ? 'line-through text-muted-foreground' : ''}`}>
+                {goal.title}
+              </p>
+              <p className="text-xs text-muted-foreground">Semana {goal.weekStart.slice(0, 10)}</p>
+            </div>
             <button
               type="button"
               onClick={() => removeGoal(goal)}
-              style={{ marginLeft: 8 }}
+              className="text-xs text-muted-foreground hover:text-foreground"
             >
               Remover
             </button>
-          </li>
+          </div>
         ))}
-      </ul>
-    </div>
+      </div>
+    </motion.div>
   )
 }
