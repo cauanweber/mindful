@@ -127,6 +127,16 @@ export default function Dashboard() {
       </div>
 
       <div className="md:hidden space-y-6">
+        <div className="h-[520px]">
+          <ProgressPanel
+            tasksDone={summary.tasksDone}
+            tasksTotal={summary.tasksTotal}
+            goalsDone={summary.goalsDone}
+            goalsTotal={summary.goalsTotal}
+            notesTotal={summary.notesTotal}
+            diaryFilled={summary.diaryFilled}
+          />
+        </div>
         <div className="h-[440px]">
           <DiarySection />
         </div>
@@ -138,16 +148,6 @@ export default function Dashboard() {
         </div>
         <div className="h-[440px]">
           <NotesSection />
-        </div>
-        <div className="h-[520px]">
-          <ProgressPanel
-            tasksDone={summary.tasksDone}
-            tasksTotal={summary.tasksTotal}
-            goalsDone={summary.goalsDone}
-            goalsTotal={summary.goalsTotal}
-            notesTotal={summary.notesTotal}
-            diaryFilled={summary.diaryFilled}
-          />
         </div>
       </div>
     </section>
