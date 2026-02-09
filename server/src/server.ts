@@ -4,6 +4,7 @@ import cors from 'cors'
 import authRoutes from './routes/auth'
 import diaryRoutes from './routes/diary'
 import tasksRoutes from './routes/tasks'
+import notesRoutes from './routes/notes'
 
 const app = express()
 
@@ -17,6 +18,7 @@ app.get('/health', (_req, res) => {
 app.use('/api/auth', authRoutes)
 app.use('/api/diary', diaryRoutes)
 app.use('/api/tasks', tasksRoutes)
+app.use('/api/notes', notesRoutes)
 
 const PORT = Number(process.env.PORT) || 3000
 
