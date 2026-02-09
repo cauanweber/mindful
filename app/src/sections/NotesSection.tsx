@@ -8,6 +8,9 @@ export default function NotesSection() {
   const [content, setContent] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const [editContent, setEditContent] = useState('')
 
   useEffect(() => {
     let active = true
@@ -44,6 +47,37 @@ export default function NotesSection() {
       setContent('')
     } catch {
       setError('Não foi possível criar a nota.')
+    }
+  }
+
+  function startEdit(note: Note) {
+    setEditingId(note.id)
+    setEditTitle(note.title)
+    setEditContent(note.content)
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setEditTitle('')
+    setEditContent('')
+  }
+
+  async function saveEdit(note: Note) {
+    if (!editTitle.trim()) {
+      setError('Título obrigatório.')
+      return
+    }
+
+    try {
+      const { data } = await http.patch<Note>(`/notes/${note.id}`, {
+        title: editTitle.trim(),
+        content: editContent.trim(),
+      })
+      setNotes(notes.map((item) => (item.id === note.id ? data : item)))
+      cancelEdit()
+      setError('')
+    } catch {
+      setError('Não foi possível atualizar a nota.')
     }
   }
 
@@ -90,14 +124,43 @@ export default function NotesSection() {
             key={note.id}
             style={{ border: '1px solid #e5e7eb', padding: 12, marginTop: 8 }}
           >
-            <strong>{note.title}</strong>
-            <p style={{ margin: '8px 0' }}>{note.content || 'Sem conteúdo'}</p>
-            <small>Atualizado em {new Date(note.updatedAt).toLocaleString()}</small>
-            <div style={{ marginTop: 8 }}>
-              <button type="button" onClick={() => removeNote(note)}>
-                Remover
-              </button>
-            </div>
+            {editingId === note.id ? (
+              <div style={{ display: 'grid', gap: 8 }}>
+                <input
+                  value={editTitle}
+                  onChange={(event) => setEditTitle(event.target.value)}
+                  placeholder="Título"
+                />
+                <textarea
+                  value={editContent}
+                  onChange={(event) => setEditContent(event.target.value)}
+                  placeholder="Conteúdo"
+                  rows={4}
+                />
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button type="button" onClick={() => saveEdit(note)}>
+                    Salvar
+                  </button>
+                  <button type="button" onClick={cancelEdit}>
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <strong>{note.title}</strong>
+                <p style={{ margin: '8px 0' }}>{note.content || 'Sem conteúdo'}</p>
+                <small>Atualizado em {new Date(note.updatedAt).toLocaleString()}</small>
+                <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+                  <button type="button" onClick={() => startEdit(note)}>
+                    Editar
+                  </button>
+                  <button type="button" onClick={() => removeNote(note)}>
+                    Remover
+                  </button>
+                </div>
+              </>
+            )}
           </li>
         ))}
       </ul>
