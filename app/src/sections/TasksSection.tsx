@@ -92,17 +92,12 @@ export default function TasksSection() {
       'sem-data': [],
     }
 
-    const todayDate = startOfDay(new Date()).toISOString().slice(0, 10)
-    const filtered = focusToday
-      ? tasks.filter((task) => task.dueDate?.slice(0, 10) === todayDate)
-      : tasks
-
-    filtered.forEach((task) => {
+    tasks.forEach((task) => {
       groups[getTaskGroup(task)].push(task)
     })
 
     return groups
-  }, [tasks, focusToday])
+  }, [tasks])
 
   async function handleAdd() {
     if (!title.trim()) return

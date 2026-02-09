@@ -62,13 +62,11 @@ export default function Dashboard() {
 
   return (
     <section>
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        {summaryError && (
-          <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-destructive">
-            {summaryError}
-          </div>
-        )}
-      </div>
+      {summaryError && (
+        <div className="mb-6 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-destructive">
+          {summaryError}
+        </div>
+      )}
 
       <div className="hidden lg:grid lg:grid-cols-12 gap-6">
         <div className="lg:col-span-4 space-y-6">
