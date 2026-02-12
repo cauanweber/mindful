@@ -171,7 +171,7 @@ export default function NotesSection() {
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-3 pr-1">
         {loading && <SectionState type="loading" message="Carregando notas..." />}
         {!loading && notes.length === 0 && (
           <SectionState type="empty" message="Nenhuma nota criada." />
@@ -213,9 +213,11 @@ export default function NotesSection() {
                   </div>
                 ) : (
                   <>
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold">{note.title}</h4>
-                      <div className="flex items-center gap-1">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <h4 className="font-semibold leading-snug break-words [overflow-wrap:anywhere] flex-1 min-w-0">
+                        {note.title}
+                      </h4>
+                      <div className="flex items-center gap-1 shrink-0">
                         <button
                           type="button"
                           onClick={() => startEdit(note)}
@@ -232,7 +234,7 @@ export default function NotesSection() {
                         </button>
                       </div>
                     </div>
-                    <p className="text-sm leading-relaxed">
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] max-h-40 overflow-y-auto pr-1">
                       {note.content || 'Sem conteúdo'}
                     </p>
                     <p className="text-xs opacity-70 mt-2">

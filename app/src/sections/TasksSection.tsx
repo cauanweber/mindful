@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Check, CheckSquare, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Check, CheckSquare, GripVertical, Pencil, Plus, Trash2 } from 'lucide-react'
 import { motion } from 'motion/react'
 import type { Task } from '../types/task'
 import http from '../services/http'
@@ -75,6 +75,8 @@ export default function TasksSection() {
     'MEDIUM',
   )
   const [lastCreatedId, setLastCreatedId] = useState<string | null>(null)
+  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null)
+  const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -212,6 +214,45 @@ export default function TasksSection() {
     }
   }
 
+  function reorderTasks(fromId: string, toId: string) {
+    if (fromId === toId) return
+
+    setTasks((current) => {
+      const fromIndex = current.findIndex((task) => task.id === fromId)
+      const toIndex = current.findIndex((task) => task.id === toId)
+      if (fromIndex < 0 || toIndex < 0) return current
+
+      const next = [...current]
+      const [moved] = next.splice(fromIndex, 1)
+      next.splice(toIndex, 0, moved)
+      return next
+    })
+  }
+
+  function handleDragStart(taskId: string, event: React.DragEvent<HTMLDivElement>) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', taskId)
+    setDraggedTaskId(taskId)
+  }
+
+  function handleDragOver(taskId: string, event: React.DragEvent<HTMLDivElement>) {
+    event.preventDefault()
+    if (dragOverTaskId !== taskId) setDragOverTaskId(taskId)
+  }
+
+  function handleDrop(taskId: string, event: React.DragEvent<HTMLDivElement>) {
+    event.preventDefault()
+    const fromId = event.dataTransfer.getData('text/plain') || draggedTaskId
+    if (fromId) reorderTasks(fromId, taskId)
+    setDraggedTaskId(null)
+    setDragOverTaskId(null)
+  }
+
+  function handleDragEnd() {
+    setDraggedTaskId(null)
+    setDragOverTaskId(null)
+  }
+
   const completedCount = tasks.filter((task) => task.completed).length
   const visibleTasksCount = Object.values(groupedTasks).reduce(
     (count, group) => count + group.length,
@@ -225,7 +266,7 @@ export default function TasksSection() {
       whileInView={isMobile ? { opacity: 1, y: 0 } : undefined}
       viewport={isMobile ? { once: true, amount: 0.3 } : undefined}
       transition={{ duration: 0.4 }}
-      className="bg-card rounded-2xl border border-border p-6 shadow-sm h-full flex flex-col"
+      className="bg-card rounded-2xl border border-border p-6 shadow-sm flex flex-col overflow-visible"
     >
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-3">
@@ -294,7 +335,7 @@ export default function TasksSection() {
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+      <div className="space-y-4 overflow-visible">
         {loading && <SectionState type="loading" message="Carregando tarefas..." />}
         {!loading && visibleTasksCount === 0 && (
           <SectionState
@@ -318,115 +359,134 @@ export default function TasksSection() {
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}
-                    className="flex items-center gap-3 p-3 rounded-xl border border-border hover:border-accent/40 transition-all duration-200"
-                  style={
-                    lastCreatedId === task.id
-                      ? { boxShadow: '0 0 0 1px rgba(37, 99, 235, 0.15)' }
-                      : undefined
-                  }
+                    className="rounded-xl"
                   >
-                  <button
-                    type="button"
-                    onClick={() => toggleTask(task)}
-                    className={`w-6 h-6 rounded-lg border flex items-center justify-center transition-all duration-200 ${
-                      task.completed
-                        ? 'bg-accent border-accent text-accent-foreground'
-                        : 'border-muted-foreground/40 text-muted-foreground'
-                    }`}
-                  >
-                    {task.completed && <Check size={14} />}
-                  </button>
-
-                  {editingId === task.id ? (
-                    <div className="flex-1 grid gap-2">
-                      <input
-                        value={editTitle}
-                        onChange={(event) => setEditTitle(event.target.value)}
-                        placeholder="Título"
-                        className="px-3 py-2 bg-secondary/50 border border-input rounded-lg"
-                      />
-                      <select
-                        value={editPriority}
-                        onChange={(event) =>
-                          setEditPriority(event.target.value as 'LOW' | 'MEDIUM' | 'HIGH')
-                        }
-                        className="px-3 py-2 bg-secondary/50 border border-input rounded-lg text-sm"
+                    <div
+                      draggable={editingId !== task.id}
+                      onDragStart={(event) => handleDragStart(task.id, event)}
+                      onDragOver={(event) => handleDragOver(task.id, event)}
+                      onDrop={(event) => handleDrop(task.id, event)}
+                      onDragEnd={handleDragEnd}
+                      className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 ${
+                        dragOverTaskId === task.id
+                          ? 'border-accent/60 bg-accent/[0.04]'
+                          : 'border-border hover:border-accent/40'
+                      } ${draggedTaskId === task.id ? 'opacity-70' : ''}`}
+                      style={
+                        lastCreatedId === task.id
+                          ? { boxShadow: '0 0 0 1px rgba(37, 99, 235, 0.15)' }
+                          : undefined
+                      }
+                    >
+                      <span
+                        className="text-muted-foreground/70 cursor-grab active:cursor-grabbing shrink-0"
+                        title="Arrastar tarefa"
                       >
-                        {PRIORITY_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        type="date"
-                        value={editDueDate}
-                        onChange={(event) => setEditDueDate(event.target.value)}
-                        className="px-3 py-2 bg-secondary/50 border border-input rounded-lg"
-                      />
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => saveEdit(task)}
-                          className="text-sm"
-                        >
-                          Salvar
-                        </button>
-                        <button type="button" onClick={cancelEdit} className="text-sm">
-                          Cancelar
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <p
-                          className={`text-sm font-medium truncate ${
-                            task.completed ? 'line-through text-muted-foreground' : ''
-                          }`}
-                          title={task.title}
-                        >
-                          {task.title}
-                        </p>
-                        {(() => {
-                          const option =
-                            PRIORITY_OPTIONS.find((item) => item.value === task.priority) ||
-                            PRIORITY_OPTIONS[1]
-                          return (
-                            <span
-                              className={`text-[11px] px-2 py-0.5 rounded-full border ${option.className} shrink-0`}
+                        <GripVertical size={16} />
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => toggleTask(task)}
+                        className={`w-6 h-6 rounded-lg border flex items-center justify-center transition-all duration-200 ${
+                          task.completed
+                            ? 'bg-accent border-accent text-accent-foreground'
+                            : 'border-muted-foreground/40 text-muted-foreground'
+                        }`}
+                      >
+                        {task.completed && <Check size={14} />}
+                      </button>
+
+                      {editingId === task.id ? (
+                        <div className="flex-1 grid gap-2">
+                          <input
+                            value={editTitle}
+                            onChange={(event) => setEditTitle(event.target.value)}
+                            placeholder="Título"
+                            className="px-3 py-2 bg-secondary/50 border border-input rounded-lg"
+                          />
+                          <select
+                            value={editPriority}
+                            onChange={(event) =>
+                              setEditPriority(event.target.value as 'LOW' | 'MEDIUM' | 'HIGH')
+                            }
+                            className="px-3 py-2 bg-secondary/50 border border-input rounded-lg text-sm"
+                          >
+                            {PRIORITY_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            type="date"
+                            value={editDueDate}
+                            onChange={(event) => setEditDueDate(event.target.value)}
+                            className="px-3 py-2 bg-secondary/50 border border-input rounded-lg"
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => saveEdit(task)}
+                              className="text-sm"
                             >
-                              {option.label}
-                            </span>
-                          )
-                        })()}
-                      </div>
-                      {task.dueDate && (
-                        <p className="text-xs text-muted-foreground">
-                          {formatShortDate(task.dueDate)}
-                        </p>
+                              Salvar
+                            </button>
+                            <button type="button" onClick={cancelEdit} className="text-sm">
+                              Cancelar
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <p
+                              className={`text-sm font-medium truncate ${
+                                task.completed ? 'line-through text-muted-foreground' : ''
+                              }`}
+                              title={task.title}
+                            >
+                              {task.title}
+                            </p>
+                            {(() => {
+                              const option =
+                                PRIORITY_OPTIONS.find((item) => item.value === task.priority) ||
+                                PRIORITY_OPTIONS[1]
+                              return (
+                                <span
+                                  className={`text-[11px] px-2 py-0.5 rounded-full border ${option.className} shrink-0`}
+                                >
+                                  {option.label}
+                                </span>
+                              )
+                            })()}
+                          </div>
+                          {task.dueDate && (
+                            <p className="text-xs text-muted-foreground">
+                              {formatShortDate(task.dueDate)}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {editingId !== task.id && (
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => startEdit(task)}
+                            className="p-2 rounded-lg hover:bg-secondary transition-all duration-200"
+                          >
+                            <Pencil size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeTask(task)}
+                            className="p-2 rounded-lg hover:bg-secondary transition-all duration-200"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       )}
                     </div>
-                  )}
-
-                  {editingId !== task.id && (
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => startEdit(task)}
-                        className="p-2 rounded-lg hover:bg-secondary transition-all duration-200"
-                      >
-                        <Pencil size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => removeTask(task)}
-                        className="p-2 rounded-lg hover:bg-secondary transition-all duration-200"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  )}
                   </motion.div>
                 ))}
               </motion.div>

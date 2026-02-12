@@ -78,7 +78,7 @@ export default function Dashboard() {
 
       {layout === 'desktop' && (
         <div className="grid grid-cols-12 gap-6">
-        <div className="lg:col-span-4 space-y-6">
+        <div className="lg:col-span-4 space-y-6 self-start">
           <div className="h-[520px]">
             <DiarySection />
           </div>
@@ -87,8 +87,8 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="lg:col-span-4 space-y-6">
-          <div className="h-[520px]">
+        <div className="lg:col-span-4 space-y-6 self-start">
+          <div>
             <TasksSection />
           </div>
           <div className="h-[520px]">
@@ -116,7 +116,7 @@ export default function Dashboard() {
         <div className="h-[480px]">
           <DiarySection />
         </div>
-        <div className="h-[480px]">
+        <div>
           <TasksSection />
         </div>
         <div className="h-[480px]">
@@ -153,7 +153,7 @@ export default function Dashboard() {
         <div className="h-[440px]">
           <DiarySection />
         </div>
-        <div className="h-[440px]">
+        <div>
           <TasksSection />
         </div>
         <div className="h-[440px]">
