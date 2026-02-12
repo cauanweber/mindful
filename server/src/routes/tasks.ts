@@ -18,7 +18,11 @@ router.get('/', requireAuth, async (req, res) => {
 // POST /api/tasks
 router.post('/', requireAuth, async (req, res) => {
   const userId = req.userId!
-  const { title, dueDate } = req.body as { title?: string; dueDate?: string }
+  const { title, dueDate, priority } = req.body as {
+    title?: string
+    dueDate?: string
+    priority?: 'LOW' | 'MEDIUM' | 'HIGH'
+  }
 
   if (!title || !title.trim()) {
     return res.status(400).json({ message: 'Título obrigatório.' })
@@ -29,6 +33,7 @@ router.post('/', requireAuth, async (req, res) => {
       userId,
       title: title.trim(),
       dueDate: dueDate ? new Date(dueDate) : undefined,
+      priority: priority || 'MEDIUM',
     },
   })
 
@@ -39,10 +44,11 @@ router.post('/', requireAuth, async (req, res) => {
 router.patch('/:id', requireAuth, async (req, res) => {
   const userId = req.userId!
   const { id } = req.params
-  const { completed, title, dueDate } = req.body as {
+  const { completed, title, dueDate, priority } = req.body as {
     completed?: boolean
     title?: string
     dueDate?: string | null
+    priority?: 'LOW' | 'MEDIUM' | 'HIGH'
   }
 
   const existing = await prisma.task.findFirst({ where: { id, userId } })
@@ -61,6 +67,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
           : dueDate
             ? new Date(dueDate)
             : existing.dueDate,
+      priority: priority || existing.priority,
     },
   })
 

@@ -3,4 +3,5 @@ export type Task = {
   title: string
   dueDate?: string
   completed: boolean
+  priority?: 'LOW' | 'MEDIUM' | 'HIGH'
 }
