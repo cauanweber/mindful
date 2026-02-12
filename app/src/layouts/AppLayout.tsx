@@ -7,7 +7,7 @@ export default function AppLayout() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <DashboardHeader userName={user?.name} onLogout={signOut} />
+      <DashboardHeader userName={user?.name} userEmail={user?.email} onLogout={signOut} />
       <div className="max-w-[1600px] mx-auto px-6 lg:px-8 py-8">
         <nav className="flex gap-3 mb-6 text-sm text-muted-foreground">
           <NavLink
