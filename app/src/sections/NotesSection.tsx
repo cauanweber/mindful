@@ -125,19 +125,15 @@ export default function NotesSection() {
   function reorderNotes(fromId: string, toId: string) {
     if (fromId === toId) return null
 
-    let nextOrder: string[] | null = null
-    setNotes((current) => {
-      const fromIndex = current.findIndex((note) => note.id === fromId)
-      const toIndex = current.findIndex((note) => note.id === toId)
-      if (fromIndex < 0 || toIndex < 0) return current
+    const fromIndex = notes.findIndex((note) => note.id === fromId)
+    const toIndex = notes.findIndex((note) => note.id === toId)
+    if (fromIndex < 0 || toIndex < 0) return null
 
-      const next = [...current]
-      const [moved] = next.splice(fromIndex, 1)
-      next.splice(toIndex, 0, moved)
-      nextOrder = next.map((note) => note.id)
-      return next
-    })
-    return nextOrder
+    const next = [...notes]
+    const [moved] = next.splice(fromIndex, 1)
+    next.splice(toIndex, 0, moved)
+    setNotes(next)
+    return next.map((note) => note.id)
   }
 
   async function loadNotes() {

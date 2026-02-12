@@ -217,19 +217,15 @@ export default function TasksSection() {
   function reorderTasks(fromId: string, toId: string) {
     if (fromId === toId) return null
 
-    let nextOrder: string[] | null = null
-    setTasks((current) => {
-      const fromIndex = current.findIndex((task) => task.id === fromId)
-      const toIndex = current.findIndex((task) => task.id === toId)
-      if (fromIndex < 0 || toIndex < 0) return current
+    const fromIndex = tasks.findIndex((task) => task.id === fromId)
+    const toIndex = tasks.findIndex((task) => task.id === toId)
+    if (fromIndex < 0 || toIndex < 0) return null
 
-      const next = [...current]
-      const [moved] = next.splice(fromIndex, 1)
-      next.splice(toIndex, 0, moved)
-      nextOrder = next.map((task) => task.id)
-      return next
-    })
-    return nextOrder
+    const next = [...tasks]
+    const [moved] = next.splice(fromIndex, 1)
+    next.splice(toIndex, 0, moved)
+    setTasks(next)
+    return next.map((task) => task.id)
   }
 
   async function loadTasks() {
