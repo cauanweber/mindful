@@ -177,12 +177,12 @@ cd server
 npm install
 ```
 
-Create a `.env` file:
+Rename `.env.example` to `.env`:
 ```bash
-PORT=3000
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/mindful
-JWT_SECRET=super_secret
-CORS_ORIGIN=http://localhost:5173
+PORT=3000            # API port
+DATABASE_URL=...     # PostgreSQL connection string
+JWT_SECRET=...       # secret key used to sign tokens
+CORS_ORIGIN=...      # allowed frontend URL for the API
 ```
 
 Initialize the database and start the API (Using Docker):
@@ -213,9 +213,9 @@ cd app
 npm install
 ```
 
-Create a `.env` file:
+Rename `.env.example` to `.env`:
 ```bash
-VITE_API_URL=http://localhost:3000/api
+VITE_API_URL=... # API base URL used by the frontend
 ```
 
 Start the app:
