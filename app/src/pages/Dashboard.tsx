@@ -82,7 +82,7 @@ export default function Dashboard() {
           <div className="h-[520px]">
             <DiarySection />
           </div>
-          <div className="h-[520px]">
+          <div>
             <NotesSection />
           </div>
         </div>
@@ -122,7 +122,7 @@ export default function Dashboard() {
         <div className="h-[480px]">
           <WeeklyGoalsSection />
         </div>
-        <div className="h-[480px]">
+        <div>
           <NotesSection />
         </div>
         <div className="col-span-2 h-[520px]">
@@ -159,7 +159,7 @@ export default function Dashboard() {
         <div className="h-[440px]">
           <WeeklyGoalsSection />
         </div>
-        <div className="h-[440px]">
+        <div>
           <NotesSection />
         </div>
       </div>

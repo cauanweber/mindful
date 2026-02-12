@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Edit2, Plus, StickyNote, Trash2 } from 'lucide-react'
+import { Edit2, GripVertical, Plus, StickyNote, Trash2 } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import type { Note } from '../types/note'
 import http from '../services/http'
@@ -26,6 +26,8 @@ export default function NotesSection() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState('')
   const [editContent, setEditContent] = useState('')
+  const [draggedNoteId, setDraggedNoteId] = useState<string | null>(null)
+  const [dragOverNoteId, setDragOverNoteId] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -120,6 +122,45 @@ export default function NotesSection() {
     }
   }
 
+  function reorderNotes(fromId: string, toId: string) {
+    if (fromId === toId) return
+
+    setNotes((current) => {
+      const fromIndex = current.findIndex((note) => note.id === fromId)
+      const toIndex = current.findIndex((note) => note.id === toId)
+      if (fromIndex < 0 || toIndex < 0) return current
+
+      const next = [...current]
+      const [moved] = next.splice(fromIndex, 1)
+      next.splice(toIndex, 0, moved)
+      return next
+    })
+  }
+
+  function handleDragStart(noteId: string, event: React.DragEvent<HTMLDivElement>) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', noteId)
+    setDraggedNoteId(noteId)
+  }
+
+  function handleDragOver(noteId: string, event: React.DragEvent<HTMLDivElement>) {
+    event.preventDefault()
+    if (dragOverNoteId !== noteId) setDragOverNoteId(noteId)
+  }
+
+  function handleDrop(noteId: string, event: React.DragEvent<HTMLDivElement>) {
+    event.preventDefault()
+    const fromId = event.dataTransfer.getData('text/plain') || draggedNoteId
+    if (fromId) reorderNotes(fromId, noteId)
+    setDraggedNoteId(null)
+    setDragOverNoteId(null)
+  }
+
+  function handleDragEnd() {
+    setDraggedNoteId(null)
+    setDragOverNoteId(null)
+  }
+
   return (
     <motion.div
       initial={isMobile ? { opacity: 0, y: 16 } : { opacity: 0, y: 12 }}
@@ -127,7 +168,7 @@ export default function NotesSection() {
       whileInView={isMobile ? { opacity: 1, y: 0 } : undefined}
       viewport={isMobile ? { once: true, amount: 0.3 } : undefined}
       transition={{ duration: 0.4 }}
-      className="bg-card rounded-2xl border border-border p-6 shadow-sm h-full flex flex-col"
+      className="bg-card rounded-2xl border border-border p-6 shadow-sm flex flex-col overflow-visible"
     >
       <div className="flex items-center gap-3 mb-5">
         <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
@@ -171,7 +212,7 @@ export default function NotesSection() {
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-3 pr-1">
+      <div className="overflow-visible overflow-x-hidden space-y-3 pr-1">
         {loading && <SectionState type="loading" message="Carregando notas..." />}
         {!loading && notes.length === 0 && (
           <SectionState type="empty" message="Nenhuma nota criada." />
@@ -187,8 +228,18 @@ export default function NotesSection() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.25 }}
-                className={`p-4 rounded-xl border ${color.bg} ${color.border} ${color.text}`}
+                className="rounded-xl"
               >
+                <div
+                  draggable={editingId !== note.id}
+                  onDragStart={(event) => handleDragStart(note.id, event)}
+                  onDragOver={(event) => handleDragOver(note.id, event)}
+                  onDrop={(event) => handleDrop(note.id, event)}
+                  onDragEnd={handleDragEnd}
+                  className={`p-4 rounded-xl border transition-all duration-200 ${color.bg} ${color.border} ${color.text} ${
+                    dragOverNoteId === note.id ? 'ring-2 ring-accent/30' : ''
+                  } ${draggedNoteId === note.id ? 'opacity-75' : ''}`}
+                >
                 {editingId === note.id ? (
                   <div className="space-y-3">
                     <input
@@ -214,9 +265,17 @@ export default function NotesSection() {
                 ) : (
                   <>
                     <div className="flex items-start justify-between gap-2 mb-2">
-                      <h4 className="font-semibold leading-snug break-words [overflow-wrap:anywhere] flex-1 min-w-0">
-                        {note.title}
-                      </h4>
+                      <div className="flex items-start gap-2 flex-1 min-w-0">
+                        <span
+                          className="text-muted-foreground/70 cursor-grab active:cursor-grabbing shrink-0 mt-0.5"
+                          title="Arrastar nota"
+                        >
+                          <GripVertical size={16} />
+                        </span>
+                        <h4 className="font-semibold leading-snug break-words [overflow-wrap:anywhere] min-w-0">
+                          {note.title}
+                        </h4>
+                      </div>
                       <div className="flex items-center gap-1 shrink-0">
                         <button
                           type="button"
@@ -234,7 +293,7 @@ export default function NotesSection() {
                         </button>
                       </div>
                     </div>
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] max-h-40 overflow-y-auto pr-1">
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
                       {note.content || 'Sem conteúdo'}
                     </p>
                     <p className="text-xs opacity-70 mt-2">
@@ -242,6 +301,7 @@ export default function NotesSection() {
                     </p>
                   </>
                 )}
+                </div>
               </motion.div>
             )
           })}
