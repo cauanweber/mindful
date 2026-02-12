@@ -6,7 +6,10 @@ const router = Router()
 
 // GET /api/notes
 router.get('/', requireAuth, async (req, res) => {
-  const userId = req.userId!
+  const userId = req.userId
+  if (!userId) {
+    return res.status(401).json({ message: 'Token inválido.' })
+  }
   const notes = await prisma.note.findMany({
     where: { userId },
     orderBy: { updatedAt: 'desc' },
@@ -17,7 +20,10 @@ router.get('/', requireAuth, async (req, res) => {
 
 // POST /api/notes
 router.post('/', requireAuth, async (req, res) => {
-  const userId = req.userId!
+  const userId = req.userId
+  if (!userId) {
+    return res.status(401).json({ message: 'Token inválido.' })
+  }
   const { title, content } = req.body as { title?: string; content?: string }
 
   if (!title || !title.trim()) {
@@ -37,8 +43,16 @@ router.post('/', requireAuth, async (req, res) => {
 
 // PATCH /api/notes/:id
 router.patch('/:id', requireAuth, async (req, res) => {
-  const userId = req.userId!
-  const { id } = req.params
+  const userId = req.userId
+  if (!userId) {
+    return res.status(401).json({ message: 'Token inválido.' })
+  }
+
+  const idParam = req.params.id
+  const id = Array.isArray(idParam) ? idParam[0] : idParam
+  if (!id) {
+    return res.status(400).json({ message: 'ID da nota inválido.' })
+  }
   const { title, content } = req.body as { title?: string; content?: string }
 
   const existing = await prisma.note.findFirst({ where: { id, userId } })
@@ -59,8 +73,16 @@ router.patch('/:id', requireAuth, async (req, res) => {
 
 // DELETE /api/notes/:id
 router.delete('/:id', requireAuth, async (req, res) => {
-  const userId = req.userId!
-  const { id } = req.params
+  const userId = req.userId
+  if (!userId) {
+    return res.status(401).json({ message: 'Token inválido.' })
+  }
+
+  const idParam = req.params.id
+  const id = Array.isArray(idParam) ? idParam[0] : idParam
+  if (!id) {
+    return res.status(400).json({ message: 'ID da nota inválido.' })
+  }
 
   const existing = await prisma.note.findFirst({ where: { id, userId } })
   if (!existing) {

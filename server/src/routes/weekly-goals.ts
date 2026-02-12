@@ -15,10 +15,14 @@ function getWeekStart(date = new Date()) {
 
 // GET /api/weekly-goals
 router.get('/', requireAuth, async (req, res) => {
-  const userId = req.userId!
-  const weekStart = req.query.weekStart
-    ? new Date(String(req.query.weekStart))
-    : getWeekStart()
+  const userId = req.userId
+  if (!userId) {
+    return res.status(401).json({ message: 'Token inválido.' })
+  }
+
+  const weekStartQuery = req.query.weekStart
+  const weekStart =
+    typeof weekStartQuery === 'string' ? new Date(weekStartQuery) : getWeekStart()
 
   const goals = await prisma.weeklyGoal.findMany({
     where: { userId, weekStart },
@@ -30,7 +34,10 @@ router.get('/', requireAuth, async (req, res) => {
 
 // POST /api/weekly-goals
 router.post('/', requireAuth, async (req, res) => {
-  const userId = req.userId!
+  const userId = req.userId
+  if (!userId) {
+    return res.status(401).json({ message: 'Token inválido.' })
+  }
   const { title, weekStart } = req.body as {
     title?: string
     weekStart?: string
@@ -55,8 +62,16 @@ router.post('/', requireAuth, async (req, res) => {
 
 // PATCH /api/weekly-goals/:id
 router.patch('/:id', requireAuth, async (req, res) => {
-  const userId = req.userId!
-  const { id } = req.params
+  const userId = req.userId
+  if (!userId) {
+    return res.status(401).json({ message: 'Token inválido.' })
+  }
+
+  const idParam = req.params.id
+  const id = Array.isArray(idParam) ? idParam[0] : idParam
+  if (!id) {
+    return res.status(400).json({ message: 'ID da meta inválido.' })
+  }
   const { title, done } = req.body as { title?: string; done?: boolean }
 
   const existing = await prisma.weeklyGoal.findFirst({ where: { id, userId } })
@@ -77,8 +92,16 @@ router.patch('/:id', requireAuth, async (req, res) => {
 
 // DELETE /api/weekly-goals/:id
 router.delete('/:id', requireAuth, async (req, res) => {
-  const userId = req.userId!
-  const { id } = req.params
+  const userId = req.userId
+  if (!userId) {
+    return res.status(401).json({ message: 'Token inválido.' })
+  }
+
+  const idParam = req.params.id
+  const id = Array.isArray(idParam) ? idParam[0] : idParam
+  if (!id) {
+    return res.status(400).json({ message: 'ID da meta inválido.' })
+  }
 
   const existing = await prisma.weeklyGoal.findFirst({ where: { id, userId } })
   if (!existing) {

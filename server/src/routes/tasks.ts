@@ -6,7 +6,10 @@ const router = Router()
 
 // GET /api/tasks
 router.get('/', requireAuth, async (req, res) => {
-  const userId = req.userId!
+  const userId = req.userId
+  if (!userId) {
+    return res.status(401).json({ message: 'Token inválido.' })
+  }
   const tasks = await prisma.task.findMany({
     where: { userId },
     orderBy: { createdAt: 'desc' },
@@ -17,7 +20,10 @@ router.get('/', requireAuth, async (req, res) => {
 
 // POST /api/tasks
 router.post('/', requireAuth, async (req, res) => {
-  const userId = req.userId!
+  const userId = req.userId
+  if (!userId) {
+    return res.status(401).json({ message: 'Token inválido.' })
+  }
   const { title, dueDate, priority } = req.body as {
     title?: string
     dueDate?: string
@@ -32,7 +38,7 @@ router.post('/', requireAuth, async (req, res) => {
     data: {
       userId,
       title: title.trim(),
-      dueDate: dueDate ? new Date(dueDate) : undefined,
+      dueDate: dueDate ? new Date(dueDate) : null,
       priority: priority || 'MEDIUM',
     },
   })
@@ -42,8 +48,16 @@ router.post('/', requireAuth, async (req, res) => {
 
 // PATCH /api/tasks/:id
 router.patch('/:id', requireAuth, async (req, res) => {
-  const userId = req.userId!
-  const { id } = req.params
+  const userId = req.userId
+  if (!userId) {
+    return res.status(401).json({ message: 'Token inválido.' })
+  }
+
+  const idParam = req.params.id
+  const id = Array.isArray(idParam) ? idParam[0] : idParam
+  if (!id) {
+    return res.status(400).json({ message: 'ID da tarefa inválido.' })
+  }
   const { completed, title, dueDate, priority } = req.body as {
     completed?: boolean
     title?: string
@@ -76,8 +90,16 @@ router.patch('/:id', requireAuth, async (req, res) => {
 
 // DELETE /api/tasks/:id
 router.delete('/:id', requireAuth, async (req, res) => {
-  const userId = req.userId!
-  const { id } = req.params
+  const userId = req.userId
+  if (!userId) {
+    return res.status(401).json({ message: 'Token inválido.' })
+  }
+
+  const idParam = req.params.id
+  const id = Array.isArray(idParam) ? idParam[0] : idParam
+  if (!id) {
+    return res.status(400).json({ message: 'ID da tarefa inválido.' })
+  }
 
   const existing = await prisma.task.findFirst({ where: { id, userId } })
   if (!existing) {
