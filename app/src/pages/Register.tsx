@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { UserPlus } from 'lucide-react'
-import { motion } from 'motion/react'
+import { AnimatePresence, motion } from 'motion/react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
@@ -15,6 +15,12 @@ export default function Register() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (!error) return
+    const timer = window.setTimeout(() => setError(''), 3500)
+    return () => window.clearTimeout(timer)
+  }, [error])
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -45,7 +51,6 @@ export default function Register() {
         'Não foi possível criar a conta. Tente novamente.',
       )
       setError(message)
-      toast.error(message)
     }
   }
 
@@ -81,7 +86,10 @@ export default function Register() {
                 id="name"
                 type="text"
                 value={name}
-                onChange={(event) => setName(event.target.value)}
+                onChange={(event) => {
+                  setName(event.target.value)
+                  if (error) setError('')
+                }}
                 className="w-full px-4 py-3 bg-input-background border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all duration-200"
                 placeholder="Seu nome"
                 required
@@ -96,7 +104,10 @@ export default function Register() {
                 id="email"
                 type="email"
                 value={email}
-                onChange={(event) => setEmail(event.target.value)}
+                onChange={(event) => {
+                  setEmail(event.target.value)
+                  if (error) setError('')
+                }}
                 className="w-full px-4 py-3 bg-input-background border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all duration-200"
                 placeholder="voce@exemplo.com"
                 required
@@ -111,7 +122,10 @@ export default function Register() {
                 id="password"
                 type="password"
                 value={password}
-                onChange={(event) => setPassword(event.target.value)}
+                onChange={(event) => {
+                  setPassword(event.target.value)
+                  if (error) setError('')
+                }}
                 className="w-full px-4 py-3 bg-input-background border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all duration-200"
                 placeholder="Crie uma senha"
                 required
@@ -126,14 +140,15 @@ export default function Register() {
                 id="confirmPassword"
                 type="password"
                 value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
+                onChange={(event) => {
+                  setConfirmPassword(event.target.value)
+                  if (error) setError('')
+                }}
                 className="w-full px-4 py-3 bg-input-background border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all duration-200"
                 placeholder="Repita a senha"
                 required
               />
             </div>
-
-            {error && <p className="text-destructive text-sm">{error}</p>}
 
             <button
               type="submit"
@@ -157,6 +172,20 @@ export default function Register() {
           </div>
         </motion.div>
       </motion.div>
+
+      <AnimatePresence>
+        {error && (
+          <motion.p
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.2 }}
+            className="fixed left-1/2 -translate-x-1/2 bottom-[10px] z-50 rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-2 text-destructive text-sm"
+          >
+            {error}
+          </motion.p>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
