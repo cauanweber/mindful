@@ -7,14 +7,20 @@ import tasksRoutes from './routes/tasks'
 import notesRoutes from './routes/notes'
 import weeklyGoalsRoutes from './routes/weekly-goals'
 import { errorHandler, notFoundHandler } from './middleware/error'
+import prisma from './lib/prisma'
 
 const app = express()
 
 app.use(cors())
 app.use(express.json())
 
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok' })
+app.get('/health', async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`
+    res.json({ status: 'ok', db: 'up' })
+  } catch {
+    res.status(503).json({ status: 'degraded', db: 'down' })
+  }
 })
 
 app.use('/api/auth', authRoutes)
