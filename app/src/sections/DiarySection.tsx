@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import type { DiaryEntry } from '../types/diary'
 import http from '../services/http'
 import useIsMobile from '../hooks/useIsMobile'
+import { getApiErrorMessage } from '../utils/apiError'
 
 function todayISO() {
   const now = new Date()
@@ -36,8 +37,9 @@ export default function DiarySection() {
             content: data.content,
           })
         }
-      } catch {
-        if (active) setError('Não foi possível carregar o diário.')
+      } catch (error) {
+        if (active)
+          setError(getApiErrorMessage(error, 'Não foi possível carregar o diário.'))
       } finally {
         if (active) setLoading(false)
       }
@@ -60,8 +62,8 @@ export default function DiarySection() {
       setSaved(true)
       setError('')
       setTimeout(() => setSaved(false), 1200)
-    } catch {
-      setError('Não foi possível salvar o diário.')
+    } catch (error) {
+      setError(getApiErrorMessage(error, 'Não foi possível salvar o diário.'))
     } finally {
       setSaving(false)
     }

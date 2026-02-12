@@ -3,6 +3,7 @@ import { UserPlus } from 'lucide-react'
 import { motion } from 'motion/react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { getApiErrorMessage } from '../utils/apiError'
 
 export default function Register() {
   const navigate = useNavigate()
@@ -35,8 +36,8 @@ export default function Register() {
       await signUp(name, email, password)
       setError('')
       navigate('/app')
-    } catch {
-      setError('Não foi possível criar a conta. Tente novamente.')
+    } catch (error) {
+      setError(getApiErrorMessage(error, 'Não foi possível criar a conta. Tente novamente.'))
     }
   }
 

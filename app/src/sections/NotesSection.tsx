@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import type { Note } from '../types/note'
 import http from '../services/http'
 import useIsMobile from '../hooks/useIsMobile'
+import { getApiErrorMessage } from '../utils/apiError'
 
 const NOTE_COLORS = [
   { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-900' },
@@ -30,8 +31,9 @@ export default function NotesSection() {
       try {
         const { data } = await http.get<Note[]>('/notes')
         if (active) setNotes(data)
-      } catch {
-        if (active) setError('Não foi possível carregar as notas.')
+      } catch (error) {
+        if (active)
+          setError(getApiErrorMessage(error, 'Não foi possível carregar as notas.'))
       } finally {
         if (active) setLoading(false)
       }
@@ -56,8 +58,8 @@ export default function NotesSection() {
       setNotes([data, ...notes])
       setTitle('')
       setContent('')
-    } catch {
-      setError('Não foi possível criar a nota.')
+    } catch (error) {
+      setError(getApiErrorMessage(error, 'Não foi possível criar a nota.'))
     }
   }
 
@@ -87,8 +89,8 @@ export default function NotesSection() {
       setNotes(notes.map((item) => (item.id === note.id ? data : item)))
       cancelEdit()
       setError('')
-    } catch {
-      setError('Não foi possível atualizar a nota.')
+    } catch (error) {
+      setError(getApiErrorMessage(error, 'Não foi possível atualizar a nota.'))
     }
   }
 
@@ -96,8 +98,8 @@ export default function NotesSection() {
     try {
       await http.delete(`/notes/${note.id}`)
       setNotes(notes.filter((item) => item.id !== note.id))
-    } catch {
-      setError('Não foi possível remover a nota.')
+    } catch (error) {
+      setError(getApiErrorMessage(error, 'Não foi possível remover a nota.'))
     }
   }
 

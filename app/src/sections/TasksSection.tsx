@@ -4,6 +4,7 @@ import { motion } from 'motion/react'
 import type { Task } from '../types/task'
 import http from '../services/http'
 import useIsMobile from '../hooks/useIsMobile'
+import { getApiErrorMessage } from '../utils/apiError'
 
 const PRIORITY_OPTIONS = [
   { value: 'HIGH', label: 'Alta', className: 'bg-red-50 text-red-700 border-red-200' },
@@ -79,8 +80,9 @@ export default function TasksSection() {
       try {
         const { data } = await http.get<Task[]>('/tasks')
         if (active) setTasks(data)
-      } catch {
-        if (active) setError('Não foi possível carregar as tarefas.')
+      } catch (error) {
+        if (active)
+          setError(getApiErrorMessage(error, 'Não foi possível carregar as tarefas.'))
       } finally {
         if (active) setLoading(false)
       }
@@ -131,8 +133,8 @@ export default function TasksSection() {
       setDueDate('')
       setLastCreatedId(data.id)
       setTimeout(() => setLastCreatedId(null), 1200)
-    } catch {
-      setError('Não foi possível criar a tarefa.')
+    } catch (error) {
+      setError(getApiErrorMessage(error, 'Não foi possível criar a tarefa.'))
     }
   }
 
@@ -142,8 +144,8 @@ export default function TasksSection() {
         completed: !task.completed,
       })
       setTasks(tasks.map((item) => (item.id === task.id ? data : item)))
-    } catch {
-      setError('Não foi possível atualizar a tarefa.')
+    } catch (error) {
+      setError(getApiErrorMessage(error, 'Não foi possível atualizar a tarefa.'))
     }
   }
 
@@ -176,8 +178,8 @@ export default function TasksSection() {
       setTasks(tasks.map((item) => (item.id === task.id ? data : item)))
       cancelEdit()
       setError('')
-    } catch {
-      setError('Não foi possível atualizar a tarefa.')
+    } catch (error) {
+      setError(getApiErrorMessage(error, 'Não foi possível atualizar a tarefa.'))
     }
   }
 
@@ -185,8 +187,8 @@ export default function TasksSection() {
     try {
       await http.delete(`/tasks/${task.id}`)
       setTasks(tasks.filter((item) => item.id !== task.id))
-    } catch {
-      setError('Não foi possível remover a tarefa.')
+    } catch (error) {
+      setError(getApiErrorMessage(error, 'Não foi possível remover a tarefa.'))
     }
   }
 

@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import type { WeeklyGoal } from '../types/weeklyGoal'
 import http from '../services/http'
 import useIsMobile from '../hooks/useIsMobile'
+import { getApiErrorMessage } from '../utils/apiError'
 
 function weekStartISO() {
   const now = new Date()
@@ -33,8 +34,9 @@ export default function WeeklyGoalsSection() {
           { params: { weekStart } },
         )
         if (active) setGoals(data.goals)
-      } catch {
-        if (active) setError('Não foi possível carregar as metas.')
+      } catch (error) {
+        if (active)
+          setError(getApiErrorMessage(error, 'Não foi possível carregar as metas.'))
       } finally {
         if (active) setLoading(false)
       }
@@ -57,8 +59,8 @@ export default function WeeklyGoalsSection() {
       })
       setGoals([data, ...goals])
       setTitle('')
-    } catch {
-      setError('Não foi possível criar a meta.')
+    } catch (error) {
+      setError(getApiErrorMessage(error, 'Não foi possível criar a meta.'))
     }
   }
 
@@ -68,8 +70,8 @@ export default function WeeklyGoalsSection() {
         done: !goal.done,
       })
       setGoals(goals.map((item) => (item.id === goal.id ? data : item)))
-    } catch {
-      setError('Não foi possível atualizar a meta.')
+    } catch (error) {
+      setError(getApiErrorMessage(error, 'Não foi possível atualizar a meta.'))
     }
   }
 
@@ -77,8 +79,8 @@ export default function WeeklyGoalsSection() {
     try {
       await http.delete(`/weekly-goals/${goal.id}`)
       setGoals(goals.filter((item) => item.id !== goal.id))
-    } catch {
-      setError('Não foi possível remover a meta.')
+    } catch (error) {
+      setError(getApiErrorMessage(error, 'Não foi possível remover a meta.'))
     }
   }
 
