@@ -6,6 +6,7 @@ import http from '../services/http'
 import useIsMobile from '../hooks/useIsMobile'
 import { getApiErrorMessage } from '../utils/apiError'
 import { useToast } from '../context/ToastContext'
+import SectionState from '../components/SectionState'
 
 function todayISO() {
   const now = new Date()
@@ -111,14 +112,18 @@ export default function DiarySection() {
       </div>
 
       <div className="flex-1 flex flex-col gap-3">
-        <textarea
-          value={entry.content}
-          onChange={(event) => setEntry({ ...entry, content: event.target.value })}
-          placeholder="Como foi o seu dia? O que você aprendeu?"
-          className="w-full h-full min-h-[180px] px-4 py-3 bg-secondary/50 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-transparent transition-all duration-200 resize-none"
-          style={{ fontSize: '0.9375rem', lineHeight: '1.6' }}
-          disabled={loading}
-        />
+        {loading ? (
+          <SectionState type="loading" message="Carregando diário..." />
+        ) : (
+          <textarea
+            value={entry.content}
+            onChange={(event) => setEntry({ ...entry, content: event.target.value })}
+            placeholder="Como foi o seu dia? O que você aprendeu?"
+            className="w-full h-full min-h-[180px] px-4 py-3 bg-secondary/50 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-transparent transition-all duration-200 resize-none"
+            style={{ fontSize: '0.9375rem', lineHeight: '1.6' }}
+            disabled={loading}
+          />
+        )}
 
         <AnimatePresence mode="wait">
           {error && (

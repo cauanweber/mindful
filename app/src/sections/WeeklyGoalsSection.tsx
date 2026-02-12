@@ -6,6 +6,7 @@ import http from '../services/http'
 import useIsMobile from '../hooks/useIsMobile'
 import { getApiErrorMessage } from '../utils/apiError'
 import { useToast } from '../context/ToastContext'
+import SectionState from '../components/SectionState'
 
 function weekStartISO() {
   const now = new Date()
@@ -160,9 +161,9 @@ export default function WeeklyGoalsSection() {
       )}
 
       <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-        {loading && <p className="text-sm text-muted-foreground">Carregando...</p>}
+        {loading && <SectionState type="loading" message="Carregando metas..." />}
         {!loading && goals.length === 0 && (
-          <p className="text-sm text-muted-foreground">Nenhuma meta criada.</p>
+          <SectionState type="empty" message="Nenhuma meta criada." />
         )}
         <AnimatePresence>
           {goals.map((goal) => (

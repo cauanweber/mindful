@@ -6,6 +6,7 @@ import http from '../services/http'
 import useIsMobile from '../hooks/useIsMobile'
 import { getApiErrorMessage } from '../utils/apiError'
 import { useToast } from '../context/ToastContext'
+import SectionState from '../components/SectionState'
 
 const NOTE_COLORS = [
   { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-900' },
@@ -171,9 +172,9 @@ export default function NotesSection() {
       )}
 
       <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-        {loading && <p className="text-sm text-muted-foreground">Carregando...</p>}
+        {loading && <SectionState type="loading" message="Carregando notas..." />}
         {!loading && notes.length === 0 && (
-          <p className="text-sm text-muted-foreground">Nenhuma nota criada.</p>
+          <SectionState type="empty" message="Nenhuma nota criada." />
         )}
         <AnimatePresence>
           {notes.map((note, index) => {

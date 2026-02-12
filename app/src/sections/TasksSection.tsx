@@ -6,6 +6,7 @@ import http from '../services/http'
 import useIsMobile from '../hooks/useIsMobile'
 import { getApiErrorMessage } from '../utils/apiError'
 import { useToast } from '../context/ToastContext'
+import SectionState from '../components/SectionState'
 
 const PRIORITY_OPTIONS = [
   { value: 'HIGH', label: 'Alta', className: 'bg-red-50 text-red-700 border-red-200' },
@@ -212,6 +213,10 @@ export default function TasksSection() {
   }
 
   const completedCount = tasks.filter((task) => task.completed).length
+  const visibleTasksCount = Object.values(groupedTasks).reduce(
+    (count, group) => count + group.length,
+    0,
+  )
 
   return (
     <motion.div
@@ -290,9 +295,12 @@ export default function TasksSection() {
       )}
 
       <div className="flex-1 overflow-y-auto space-y-4 pr-1">
-        {loading && <p className="text-sm text-muted-foreground">Carregando...</p>}
-        {!loading && tasks.length === 0 && (
-          <p className="text-sm text-muted-foreground">Nenhuma tarefa criada.</p>
+        {loading && <SectionState type="loading" message="Carregando tarefas..." />}
+        {!loading && visibleTasksCount === 0 && (
+          <SectionState
+            type="empty"
+            message={focusToday ? 'Nenhuma tarefa para hoje.' : 'Nenhuma tarefa criada.'}
+          />
         )}
 
         {Object.entries(groupedTasks).map(([groupKey, groupItems]) => {
