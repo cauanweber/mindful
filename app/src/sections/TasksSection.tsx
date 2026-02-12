@@ -306,6 +306,7 @@ export default function TasksSection() {
             className="accent-[color:var(--accent)]"
             checked={focusToday}
             onChange={(event) => setFocusToday(event.target.checked)}
+            aria-label="Filtrar tarefas para somente hoje"
           />
           Somente hoje
         </label>
@@ -341,8 +342,9 @@ export default function TasksSection() {
           <motion.button
             type="button"
             onClick={handleAdd}
-            className="w-11 h-11 rounded-full bg-accent text-accent-foreground flex items-center justify-center hover:bg-accent/90 transition-all duration-200"
+            className="w-11 h-11 rounded-full bg-accent text-accent-foreground flex items-center justify-center hover:bg-accent/90 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
             whileTap={{ scale: 0.92 }}
+            aria-label="Adicionar tarefa"
           >
             <Plus size={18} />
           </motion.button>
@@ -411,7 +413,13 @@ export default function TasksSection() {
                           task.completed
                             ? 'bg-accent border-accent text-accent-foreground'
                             : 'border-muted-foreground/40 text-muted-foreground'
-                        }`}
+                        } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2`}
+                        aria-label={
+                          task.completed
+                            ? `Marcar tarefa "${task.title}" como não concluída`
+                            : `Marcar tarefa "${task.title}" como concluída`
+                        }
+                        aria-pressed={task.completed}
                       >
                         {task.completed && <Check size={14} />}
                       </button>
@@ -493,14 +501,16 @@ export default function TasksSection() {
                           <button
                             type="button"
                             onClick={() => startEdit(task)}
-                            className="p-2 rounded-lg hover:bg-secondary transition-all duration-200"
+                            className="p-2 rounded-lg hover:bg-secondary transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                            aria-label={`Editar tarefa "${task.title}"`}
                           >
                             <Pencil size={16} />
                           </button>
                           <button
                             type="button"
                             onClick={() => removeTask(task)}
-                            className="p-2 rounded-lg hover:bg-secondary transition-all duration-200"
+                            className="p-2 rounded-lg hover:bg-secondary transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                            aria-label={`Remover tarefa "${task.title}"`}
                           >
                             <Trash2 size={16} />
                           </button>

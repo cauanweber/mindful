@@ -148,7 +148,8 @@ export default function WeeklyGoalsSection() {
         <button
           type="button"
           onClick={handleAdd}
-          className="p-2.5 bg-accent text-accent-foreground rounded-xl hover:bg-accent/90 transition-all duration-200"
+          className="p-2.5 bg-accent text-accent-foreground rounded-xl hover:bg-accent/90 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+          aria-label="Adicionar meta semanal"
         >
           <Plus size={18} />
         </button>
@@ -182,7 +183,13 @@ export default function WeeklyGoalsSection() {
                   goal.done
                     ? 'bg-accent border-accent text-accent-foreground'
                     : 'border-muted-foreground/40 text-muted-foreground'
-                }`}
+                } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2`}
+                aria-label={
+                  goal.done
+                    ? `Marcar meta "${goal.title}" como não concluída`
+                    : `Marcar meta "${goal.title}" como concluída`
+                }
+                aria-pressed={goal.done}
               >
                 {goal.done && <span className="text-xs">✓</span>}
               </button>

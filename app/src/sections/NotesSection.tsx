@@ -219,7 +219,7 @@ export default function NotesSection() {
         <button
           type="button"
           onClick={handleAdd}
-          className="w-full bg-accent text-accent-foreground py-2.5 px-4 rounded-xl hover:bg-accent/90 transition-all duration-200 flex items-center justify-center gap-2"
+          className="w-full bg-accent text-accent-foreground py-2.5 px-4 rounded-xl hover:bg-accent/90 transition-all duration-200 flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
         >
           <Plus size={18} />
           <span>Adicionar nota</span>
@@ -300,14 +300,16 @@ export default function NotesSection() {
                         <button
                           type="button"
                           onClick={() => startEdit(note)}
-                          className="p-1 rounded-md hover:bg-white/60"
+                          className="p-1 rounded-md hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                          aria-label={`Editar nota "${note.title}"`}
                         >
                           <Edit2 size={14} />
                         </button>
                         <button
                           type="button"
                           onClick={() => removeNote(note)}
-                          className="p-1 rounded-md hover:bg-white/60"
+                          className="p-1 rounded-md hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                          aria-label={`Remover nota "${note.title}"`}
                         >
                           <Trash2 size={14} />
                         </button>
