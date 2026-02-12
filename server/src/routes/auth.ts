@@ -2,18 +2,29 @@ import { Router } from 'express'
 import prisma from '../lib/prisma'
 import { comparePassword, hashPassword, signToken } from '../lib/auth'
 import { requireAuth } from '../middleware/auth'
+import { isRecord, isValidEmail, nonEmptyString } from '../lib/validation'
 
 const router = Router()
 
 router.post('/register', async (req, res) => {
-  const { name, email, password } = req.body as {
-    name?: string
-    email?: string
-    password?: string
+  if (!isRecord(req.body)) {
+    return res.status(400).json({ message: 'Payload inválido.' })
   }
+
+  const name = nonEmptyString(req.body.name)
+  const email = nonEmptyString(req.body.email)?.toLowerCase()
+  const password = nonEmptyString(req.body.password)
 
   if (!name || !email || !password) {
     return res.status(400).json({ message: 'Preencha todos os campos.' })
+  }
+
+  if (!isValidEmail(email)) {
+    return res.status(400).json({ message: 'E-mail inválido.' })
+  }
+
+  if (password.length < 6) {
+    return res.status(400).json({ message: 'Senha deve ter ao menos 6 caracteres.' })
   }
 
   const existingUser = await prisma.user.findUnique({ where: { email } })
@@ -39,13 +50,19 @@ router.post('/register', async (req, res) => {
 })
 
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body as {
-    email?: string
-    password?: string
+  if (!isRecord(req.body)) {
+    return res.status(400).json({ message: 'Payload inválido.' })
   }
+
+  const email = nonEmptyString(req.body.email)?.toLowerCase()
+  const password = nonEmptyString(req.body.password)
 
   if (!email || !password) {
     return res.status(400).json({ message: 'Preencha e-mail e senha.' })
+  }
+
+  if (!isValidEmail(email)) {
+    return res.status(400).json({ message: 'E-mail inválido.' })
   }
 
   const user = await prisma.user.findUnique({ where: { email } })

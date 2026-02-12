@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import prisma from '../lib/prisma'
 import { requireAuth } from '../middleware/auth'
+import { isRecord, nonEmptyString, parseStringArray } from '../lib/validation'
 
 const router = Router()
 
@@ -24,17 +25,22 @@ router.post('/', requireAuth, async (req, res) => {
   if (!userId) {
     return res.status(401).json({ message: 'Token inválido.' })
   }
-  const { title, content } = req.body as { title?: string; content?: string }
+  if (!isRecord(req.body)) {
+    return res.status(400).json({ message: 'Payload inválido.' })
+  }
 
-  if (!title || !title.trim()) {
+  const title = nonEmptyString(req.body.title)
+  const content = typeof req.body.content === 'string' ? req.body.content.trim() : ''
+
+  if (!title) {
     return res.status(400).json({ message: 'Título obrigatório.' })
   }
 
   const note = await prisma.note.create({
     data: {
       userId,
-      title: title.trim(),
-      content: content?.trim() || '',
+      title,
+      content,
       sortOrder:
         ((await prisma.note.aggregate({
           where: { userId },
@@ -53,8 +59,12 @@ router.put('/reorder', requireAuth, async (req, res) => {
     return res.status(401).json({ message: 'Token inválido.' })
   }
 
-  const { ids } = req.body as { ids?: string[] }
-  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+  if (!isRecord(req.body)) {
+    return res.status(400).json({ message: 'Payload inválido.' })
+  }
+
+  const ids = parseStringArray(req.body.ids)
+  if (!ids || ids.length === 0) {
     return res.status(400).json({ message: 'Lista de IDs inválida.' })
   }
 
@@ -94,18 +104,29 @@ router.patch('/:id', requireAuth, async (req, res) => {
   if (!id) {
     return res.status(400).json({ message: 'ID da nota inválido.' })
   }
-  const { title, content } = req.body as { title?: string; content?: string }
+  if (!isRecord(req.body)) {
+    return res.status(400).json({ message: 'Payload inválido.' })
+  }
+  const titleRaw = req.body.title
+  const contentRaw = req.body.content
 
   const existing = await prisma.note.findFirst({ where: { id, userId } })
   if (!existing) {
     return res.status(404).json({ message: 'Nota não encontrada.' })
   }
 
+  const title = titleRaw === undefined ? undefined : nonEmptyString(titleRaw)
+  if (titleRaw !== undefined && !title) {
+    return res.status(400).json({ message: 'Título obrigatório.' })
+  }
+
+  const content = contentRaw === undefined ? undefined : String(contentRaw).trim()
+
   const note = await prisma.note.update({
     where: { id },
     data: {
-      title: title !== undefined ? title.trim() : existing.title,
-      content: content !== undefined ? content.trim() : existing.content,
+      title: title ?? existing.title,
+      content: content ?? existing.content,
     },
   })
 

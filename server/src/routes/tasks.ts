@@ -1,6 +1,14 @@
 import { Router } from 'express'
+import type { TaskPriority } from '@prisma/client'
 import prisma from '../lib/prisma'
 import { requireAuth } from '../middleware/auth'
+import {
+  booleanOrUndefined,
+  isRecord,
+  nonEmptyString,
+  parseDateString,
+  parseStringArray,
+} from '../lib/validation'
 
 const router = Router()
 
@@ -24,22 +32,37 @@ router.post('/', requireAuth, async (req, res) => {
   if (!userId) {
     return res.status(401).json({ message: 'Token inválido.' })
   }
-  const { title, dueDate, priority } = req.body as {
-    title?: string
-    dueDate?: string
-    priority?: 'LOW' | 'MEDIUM' | 'HIGH'
+  if (!isRecord(req.body)) {
+    return res.status(400).json({ message: 'Payload inválido.' })
   }
 
-  if (!title || !title.trim()) {
+  const title = nonEmptyString(req.body.title)
+  const dueDateRaw = req.body.dueDate
+  const priority = req.body.priority
+
+  if (!title) {
     return res.status(400).json({ message: 'Título obrigatório.' })
   }
+
+  const dueDate =
+    dueDateRaw === undefined || dueDateRaw === null ? null : parseDateString(dueDateRaw)
+  if (dueDateRaw !== undefined && dueDateRaw !== null && !dueDate) {
+    return res.status(400).json({ message: 'Data de vencimento inválida.' })
+  }
+
+  const allowedPriorities: TaskPriority[] = ['LOW', 'MEDIUM', 'HIGH']
+  const normalizedPriority =
+    typeof priority === 'string' &&
+    allowedPriorities.includes(priority as TaskPriority)
+      ? (priority as TaskPriority)
+      : 'MEDIUM'
 
   const task = await prisma.task.create({
     data: {
       userId,
-      title: title.trim(),
-      dueDate: dueDate ? new Date(dueDate) : null,
-      priority: priority || 'MEDIUM',
+      title,
+      dueDate,
+      priority: normalizedPriority,
       sortOrder:
         ((await prisma.task.aggregate({
           where: { userId },
@@ -58,8 +81,12 @@ router.put('/reorder', requireAuth, async (req, res) => {
     return res.status(401).json({ message: 'Token inválido.' })
   }
 
-  const { ids } = req.body as { ids?: string[] }
-  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+  if (!isRecord(req.body)) {
+    return res.status(400).json({ message: 'Payload inválido.' })
+  }
+
+  const ids = parseStringArray(req.body.ids)
+  if (!ids || ids.length === 0) {
     return res.status(400).json({ message: 'Lista de IDs inválida.' })
   }
 
@@ -99,30 +126,51 @@ router.patch('/:id', requireAuth, async (req, res) => {
   if (!id) {
     return res.status(400).json({ message: 'ID da tarefa inválido.' })
   }
-  const { completed, title, dueDate, priority } = req.body as {
-    completed?: boolean
-    title?: string
-    dueDate?: string | null
-    priority?: 'LOW' | 'MEDIUM' | 'HIGH'
+  if (!isRecord(req.body)) {
+    return res.status(400).json({ message: 'Payload inválido.' })
   }
+  const completed = booleanOrUndefined(req.body.completed)
+  const titleRaw = req.body.title
+  const dueDateRaw = req.body.dueDate
+  const priorityRaw = req.body.priority
 
   const existing = await prisma.task.findFirst({ where: { id, userId } })
   if (!existing) {
     return res.status(404).json({ message: 'Tarefa não encontrada.' })
   }
 
+  const parsedTitle =
+    titleRaw === undefined ? undefined : nonEmptyString(titleRaw)
+  if (titleRaw !== undefined && !parsedTitle) {
+    return res.status(400).json({ message: 'Título obrigatório.' })
+  }
+
+  let parsedDueDate: Date | null | undefined
+  if (dueDateRaw === null) {
+    parsedDueDate = null
+  } else if (dueDateRaw === undefined) {
+    parsedDueDate = undefined
+  } else {
+    parsedDueDate = parseDateString(dueDateRaw)
+    if (!parsedDueDate) {
+      return res.status(400).json({ message: 'Data de vencimento inválida.' })
+    }
+  }
+
+  const allowedPriorities: TaskPriority[] = ['LOW', 'MEDIUM', 'HIGH']
+  const normalizedPriority =
+    typeof priorityRaw === 'string' &&
+    allowedPriorities.includes(priorityRaw as TaskPriority)
+      ? (priorityRaw as TaskPriority)
+      : undefined
+
   const task = await prisma.task.update({
     where: { id },
     data: {
-      completed: typeof completed === 'boolean' ? completed : existing.completed,
-      title: title !== undefined ? title.trim() : existing.title,
-      dueDate:
-        dueDate === null
-          ? null
-          : dueDate
-            ? new Date(dueDate)
-            : existing.dueDate,
-      priority: priority || existing.priority,
+      completed: completed ?? existing.completed,
+      title: parsedTitle ?? existing.title,
+      dueDate: parsedDueDate === undefined ? existing.dueDate : parsedDueDate,
+      priority: normalizedPriority ?? existing.priority,
     },
   })
 

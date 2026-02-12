@@ -1,6 +1,12 @@
 import { Router } from 'express'
 import prisma from '../lib/prisma'
 import { requireAuth } from '../middleware/auth'
+import {
+  booleanOrUndefined,
+  isRecord,
+  nonEmptyString,
+  parseDateString,
+} from '../lib/validation'
 
 const router = Router()
 
@@ -21,8 +27,10 @@ router.get('/', requireAuth, async (req, res) => {
   }
 
   const weekStartQuery = req.query.weekStart
-  const weekStart =
-    typeof weekStartQuery === 'string' ? new Date(weekStartQuery) : getWeekStart()
+  const weekStart = weekStartQuery ? parseDateString(weekStartQuery) : getWeekStart()
+  if (!weekStart) {
+    return res.status(400).json({ message: 'Data de início da semana inválida.' })
+  }
 
   const goals = await prisma.weeklyGoal.findMany({
     where: { userId, weekStart },
@@ -38,21 +46,25 @@ router.post('/', requireAuth, async (req, res) => {
   if (!userId) {
     return res.status(401).json({ message: 'Token inválido.' })
   }
-  const { title, weekStart } = req.body as {
-    title?: string
-    weekStart?: string
+  if (!isRecord(req.body)) {
+    return res.status(400).json({ message: 'Payload inválido.' })
   }
+  const title = nonEmptyString(req.body.title)
+  const weekStartRaw = req.body.weekStart
 
-  if (!title || !title.trim()) {
+  if (!title) {
     return res.status(400).json({ message: 'Título obrigatório.' })
   }
 
-  const startDate = weekStart ? new Date(weekStart) : getWeekStart()
+  const startDate = weekStartRaw ? parseDateString(weekStartRaw) : getWeekStart()
+  if (!startDate) {
+    return res.status(400).json({ message: 'Data de início da semana inválida.' })
+  }
 
   const goal = await prisma.weeklyGoal.create({
     data: {
       userId,
-      title: title.trim(),
+      title,
       weekStart: startDate,
     },
   })
@@ -72,18 +84,27 @@ router.patch('/:id', requireAuth, async (req, res) => {
   if (!id) {
     return res.status(400).json({ message: 'ID da meta inválido.' })
   }
-  const { title, done } = req.body as { title?: string; done?: boolean }
+  if (!isRecord(req.body)) {
+    return res.status(400).json({ message: 'Payload inválido.' })
+  }
+  const titleRaw = req.body.title
+  const done = booleanOrUndefined(req.body.done)
 
   const existing = await prisma.weeklyGoal.findFirst({ where: { id, userId } })
   if (!existing) {
     return res.status(404).json({ message: 'Meta não encontrada.' })
   }
 
+  const title = titleRaw === undefined ? undefined : nonEmptyString(titleRaw)
+  if (titleRaw !== undefined && !title) {
+    return res.status(400).json({ message: 'Título obrigatório.' })
+  }
+
   const goal = await prisma.weeklyGoal.update({
     where: { id },
     data: {
-      title: title !== undefined ? title.trim() : existing.title,
-      done: typeof done === 'boolean' ? done : existing.done,
+      title: title ?? existing.title,
+      done: done ?? existing.done,
     },
   })
 

@@ -1,11 +1,15 @@
 import { Router } from "express"
 import prisma from "../lib/prisma"
 import { requireAuth } from "../middleware/auth"
+import { isRecord, nonEmptyString } from "../lib/validation"
 
 const router = Router()
 
 router.get("/today", requireAuth, async(req, res) => {
-    const userId = req.userId!
+    const userId = req.userId
+    if (!userId) {
+        return res.status(401).json({ message: "Token inválido." })
+    }
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
@@ -17,10 +21,18 @@ router.get("/today", requireAuth, async(req, res) => {
 })
 
 router.put("/today", requireAuth, async(req, res) => {
-    const userId = req.userId!
-    const { content }  = req.body as { content?: string }
+    const userId = req.userId
+    if (!userId) {
+        return res.status(401).json({ message: "Token inválido." })
+    }
 
-    if(!content || !content.trim())
+    if (!isRecord(req.body)) {
+        return res.status(400).json({ message: "Payload inválido." })
+    }
+
+    const content = nonEmptyString(req.body.content)
+
+    if(!content)
     {
         return res.status(400).json({ message: "Conteúdo obrigatório." })
     }
@@ -38,4 +50,3 @@ router.put("/today", requireAuth, async(req, res) => {
 })
 
 export default router
-
