@@ -5,6 +5,7 @@ import type { Note } from '../types/note'
 import http from '../services/http'
 import useIsMobile from '../hooks/useIsMobile'
 import { getApiErrorMessage } from '../utils/apiError'
+import { useToast } from '../context/ToastContext'
 
 const NOTE_COLORS = [
   { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-900' },
@@ -15,6 +16,7 @@ const NOTE_COLORS = [
 
 export default function NotesSection() {
   const isMobile = useIsMobile()
+  const toast = useToast()
   const [notes, setNotes] = useState<Note[]>([])
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
@@ -32,8 +34,11 @@ export default function NotesSection() {
         const { data } = await http.get<Note[]>('/notes')
         if (active) setNotes(data)
       } catch (error) {
-        if (active)
-          setError(getApiErrorMessage(error, 'Não foi possível carregar as notas.'))
+        if (active) {
+          const message = getApiErrorMessage(error, 'Não foi possível carregar as notas.')
+          setError(message)
+          toast.error(message)
+        }
       } finally {
         if (active) setLoading(false)
       }
@@ -58,8 +63,12 @@ export default function NotesSection() {
       setNotes([data, ...notes])
       setTitle('')
       setContent('')
+      setError('')
+      toast.success('Nota criada.')
     } catch (error) {
-      setError(getApiErrorMessage(error, 'Não foi possível criar a nota.'))
+      const message = getApiErrorMessage(error, 'Não foi possível criar a nota.')
+      setError(message)
+      toast.error(message)
     }
   }
 
@@ -89,8 +98,11 @@ export default function NotesSection() {
       setNotes(notes.map((item) => (item.id === note.id ? data : item)))
       cancelEdit()
       setError('')
+      toast.success('Nota atualizada.')
     } catch (error) {
-      setError(getApiErrorMessage(error, 'Não foi possível atualizar a nota.'))
+      const message = getApiErrorMessage(error, 'Não foi possível atualizar a nota.')
+      setError(message)
+      toast.error(message)
     }
   }
 
@@ -98,8 +110,12 @@ export default function NotesSection() {
     try {
       await http.delete(`/notes/${note.id}`)
       setNotes(notes.filter((item) => item.id !== note.id))
+      setError('')
+      toast.success('Nota removida.')
     } catch (error) {
-      setError(getApiErrorMessage(error, 'Não foi possível remover a nota.'))
+      const message = getApiErrorMessage(error, 'Não foi possível remover a nota.')
+      setError(message)
+      toast.error(message)
     }
   }
 

@@ -5,6 +5,7 @@ import type { DiaryEntry } from '../types/diary'
 import http from '../services/http'
 import useIsMobile from '../hooks/useIsMobile'
 import { getApiErrorMessage } from '../utils/apiError'
+import { useToast } from '../context/ToastContext'
 
 function todayISO() {
   const now = new Date()
@@ -13,6 +14,7 @@ function todayISO() {
 
 export default function DiarySection() {
   const isMobile = useIsMobile()
+  const toast = useToast()
   const today = useMemo(() => todayISO(), [])
   const [entry, setEntry] = useState<DiaryEntry>({
     id: 'today',
@@ -38,8 +40,11 @@ export default function DiarySection() {
           })
         }
       } catch (error) {
-        if (active)
-          setError(getApiErrorMessage(error, 'Não foi possível carregar o diário.'))
+        if (active) {
+          const message = getApiErrorMessage(error, 'Não foi possível carregar o diário.')
+          setError(message)
+          toast.error(message)
+        }
       } finally {
         if (active) setLoading(false)
       }
@@ -61,9 +66,12 @@ export default function DiarySection() {
       setEntry({ id: data.id, date: data.date, content: data.content })
       setSaved(true)
       setError('')
+      toast.success('Diário salvo.')
       setTimeout(() => setSaved(false), 1200)
     } catch (error) {
-      setError(getApiErrorMessage(error, 'Não foi possível salvar o diário.'))
+      const message = getApiErrorMessage(error, 'Não foi possível salvar o diário.')
+      setError(message)
+      toast.error(message)
     } finally {
       setSaving(false)
     }

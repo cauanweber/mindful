@@ -5,6 +5,7 @@ import type { Task } from '../types/task'
 import http from '../services/http'
 import useIsMobile from '../hooks/useIsMobile'
 import { getApiErrorMessage } from '../utils/apiError'
+import { useToast } from '../context/ToastContext'
 
 const PRIORITY_OPTIONS = [
   { value: 'HIGH', label: 'Alta', className: 'bg-red-50 text-red-700 border-red-200' },
@@ -58,6 +59,7 @@ const GROUP_LABELS: Record<string, string> = {
 
 export default function TasksSection() {
   const isMobile = useIsMobile()
+  const toast = useToast()
   const [tasks, setTasks] = useState<Task[]>([])
   const [focusToday, setFocusToday] = useState(false)
   const [title, setTitle] = useState('')
@@ -81,8 +83,11 @@ export default function TasksSection() {
         const { data } = await http.get<Task[]>('/tasks')
         if (active) setTasks(data)
       } catch (error) {
-        if (active)
-          setError(getApiErrorMessage(error, 'Não foi possível carregar as tarefas.'))
+        if (active) {
+          const message = getApiErrorMessage(error, 'Não foi possível carregar as tarefas.')
+          setError(message)
+          toast.error(message)
+        }
       } finally {
         if (active) setLoading(false)
       }
@@ -131,10 +136,14 @@ export default function TasksSection() {
       setTitle('')
       setPriority('MEDIUM')
       setDueDate('')
+      setError('')
       setLastCreatedId(data.id)
+      toast.success('Tarefa criada.')
       setTimeout(() => setLastCreatedId(null), 1200)
     } catch (error) {
-      setError(getApiErrorMessage(error, 'Não foi possível criar a tarefa.'))
+      const message = getApiErrorMessage(error, 'Não foi possível criar a tarefa.')
+      setError(message)
+      toast.error(message)
     }
   }
 
@@ -144,8 +153,11 @@ export default function TasksSection() {
         completed: !task.completed,
       })
       setTasks(tasks.map((item) => (item.id === task.id ? data : item)))
+      setError('')
     } catch (error) {
-      setError(getApiErrorMessage(error, 'Não foi possível atualizar a tarefa.'))
+      const message = getApiErrorMessage(error, 'Não foi possível atualizar a tarefa.')
+      setError(message)
+      toast.error(message)
     }
   }
 
@@ -178,8 +190,11 @@ export default function TasksSection() {
       setTasks(tasks.map((item) => (item.id === task.id ? data : item)))
       cancelEdit()
       setError('')
+      toast.success('Tarefa atualizada.')
     } catch (error) {
-      setError(getApiErrorMessage(error, 'Não foi possível atualizar a tarefa.'))
+      const message = getApiErrorMessage(error, 'Não foi possível atualizar a tarefa.')
+      setError(message)
+      toast.error(message)
     }
   }
 
@@ -187,8 +202,12 @@ export default function TasksSection() {
     try {
       await http.delete(`/tasks/${task.id}`)
       setTasks(tasks.filter((item) => item.id !== task.id))
+      setError('')
+      toast.success('Tarefa removida.')
     } catch (error) {
-      setError(getApiErrorMessage(error, 'Não foi possível remover a tarefa.'))
+      const message = getApiErrorMessage(error, 'Não foi possível remover a tarefa.')
+      setError(message)
+      toast.error(message)
     }
   }
 

@@ -3,11 +3,13 @@ import { LogIn } from 'lucide-react'
 import { motion } from 'motion/react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
 import { getApiErrorMessage } from '../utils/apiError'
 
 export default function Login() {
   const navigate = useNavigate()
   const { signIn } = useAuth()
+  const toast = useToast()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -22,11 +24,15 @@ export default function Login() {
     try {
       await signIn(email, password)
       setError('')
+      toast.success('Login realizado com sucesso.')
       navigate('/app')
     } catch (error) {
-      setError(
-        getApiErrorMessage(error, 'Não foi possível entrar. Verifique seus dados.'),
+      const message = getApiErrorMessage(
+        error,
+        'Não foi possível entrar. Verifique seus dados.',
       )
+      setError(message)
+      toast.error(message)
     }
   }
 

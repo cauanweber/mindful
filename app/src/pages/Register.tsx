@@ -3,11 +3,13 @@ import { UserPlus } from 'lucide-react'
 import { motion } from 'motion/react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
 import { getApiErrorMessage } from '../utils/apiError'
 
 export default function Register() {
   const navigate = useNavigate()
   const { signUp } = useAuth()
+  const toast = useToast()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -35,9 +37,15 @@ export default function Register() {
     try {
       await signUp(name, email, password)
       setError('')
+      toast.success('Conta criada com sucesso.')
       navigate('/app')
     } catch (error) {
-      setError(getApiErrorMessage(error, 'Não foi possível criar a conta. Tente novamente.'))
+      const message = getApiErrorMessage(
+        error,
+        'Não foi possível criar a conta. Tente novamente.',
+      )
+      setError(message)
+      toast.error(message)
     }
   }
 

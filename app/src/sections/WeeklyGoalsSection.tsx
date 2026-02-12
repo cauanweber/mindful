@@ -5,6 +5,7 @@ import type { WeeklyGoal } from '../types/weeklyGoal'
 import http from '../services/http'
 import useIsMobile from '../hooks/useIsMobile'
 import { getApiErrorMessage } from '../utils/apiError'
+import { useToast } from '../context/ToastContext'
 
 function weekStartISO() {
   const now = new Date()
@@ -18,6 +19,7 @@ function weekStartISO() {
 
 export default function WeeklyGoalsSection() {
   const isMobile = useIsMobile()
+  const toast = useToast()
   const [goals, setGoals] = useState<WeeklyGoal[]>([])
   const [title, setTitle] = useState('')
   const [loading, setLoading] = useState(true)
@@ -35,8 +37,11 @@ export default function WeeklyGoalsSection() {
         )
         if (active) setGoals(data.goals)
       } catch (error) {
-        if (active)
-          setError(getApiErrorMessage(error, 'Não foi possível carregar as metas.'))
+        if (active) {
+          const message = getApiErrorMessage(error, 'Não foi possível carregar as metas.')
+          setError(message)
+          toast.error(message)
+        }
       } finally {
         if (active) setLoading(false)
       }
@@ -59,8 +64,12 @@ export default function WeeklyGoalsSection() {
       })
       setGoals([data, ...goals])
       setTitle('')
+      setError('')
+      toast.success('Meta criada.')
     } catch (error) {
-      setError(getApiErrorMessage(error, 'Não foi possível criar a meta.'))
+      const message = getApiErrorMessage(error, 'Não foi possível criar a meta.')
+      setError(message)
+      toast.error(message)
     }
   }
 
@@ -70,8 +79,11 @@ export default function WeeklyGoalsSection() {
         done: !goal.done,
       })
       setGoals(goals.map((item) => (item.id === goal.id ? data : item)))
+      setError('')
     } catch (error) {
-      setError(getApiErrorMessage(error, 'Não foi possível atualizar a meta.'))
+      const message = getApiErrorMessage(error, 'Não foi possível atualizar a meta.')
+      setError(message)
+      toast.error(message)
     }
   }
 
@@ -79,8 +91,12 @@ export default function WeeklyGoalsSection() {
     try {
       await http.delete(`/weekly-goals/${goal.id}`)
       setGoals(goals.filter((item) => item.id !== goal.id))
+      setError('')
+      toast.success('Meta removida.')
     } catch (error) {
-      setError(getApiErrorMessage(error, 'Não foi possível remover a meta.'))
+      const message = getApiErrorMessage(error, 'Não foi possível remover a meta.')
+      setError(message)
+      toast.error(message)
     }
   }
 
