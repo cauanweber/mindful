@@ -6,6 +6,7 @@ import diaryRoutes from './routes/diary'
 import tasksRoutes from './routes/tasks'
 import notesRoutes from './routes/notes'
 import weeklyGoalsRoutes from './routes/weekly-goals'
+import { errorHandler, notFoundHandler } from './middleware/error'
 
 const app = express()
 
@@ -21,6 +22,8 @@ app.use('/api/diary', diaryRoutes)
 app.use('/api/tasks', tasksRoutes)
 app.use('/api/notes', notesRoutes)
 app.use('/api/weekly-goals', weeklyGoalsRoutes)
+app.use(notFoundHandler)
+app.use(errorHandler)
 
 const PORT = Number(process.env.PORT) || 3000
 
