@@ -40,6 +40,7 @@ model Task {
   dueDate   DateTime?
   completed Boolean  @default(false)
   priority  TaskPriority @default(MEDIUM)
+  sortOrder Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -47,6 +48,7 @@ model Task {
   user   User @relation(fields: [userId], references: [id])
 
   @@index([userId, createdAt])
+  @@index([userId, sortOrder])
 }
 
 enum TaskPriority {
@@ -59,6 +61,7 @@ model Note {
   id        String   @id @default(cuid())
   title     String
   content   String
+  sortOrder Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -66,6 +69,7 @@ model Note {
   user   User @relation(fields: [userId], references: [id])
 
   @@index([userId, updatedAt])
+  @@index([userId, sortOrder])
 }
 
 model WeeklyGoal {

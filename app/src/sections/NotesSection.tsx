@@ -123,8 +123,9 @@ export default function NotesSection() {
   }
 
   function reorderNotes(fromId: string, toId: string) {
-    if (fromId === toId) return
+    if (fromId === toId) return null
 
+    let nextOrder: string[] | null = null
     setNotes((current) => {
       const fromIndex = current.findIndex((note) => note.id === fromId)
       const toIndex = current.findIndex((note) => note.id === toId)
@@ -133,8 +134,19 @@ export default function NotesSection() {
       const next = [...current]
       const [moved] = next.splice(fromIndex, 1)
       next.splice(toIndex, 0, moved)
+      nextOrder = next.map((note) => note.id)
       return next
     })
+    return nextOrder
+  }
+
+  async function loadNotes() {
+    const { data } = await http.get<Note[]>('/notes')
+    setNotes(data)
+  }
+
+  async function persistNotesOrder(ids: string[]) {
+    await http.put('/notes/reorder', { ids })
   }
 
   function handleDragStart(noteId: string, event: React.DragEvent<HTMLDivElement>) {
@@ -151,7 +163,19 @@ export default function NotesSection() {
   function handleDrop(noteId: string, event: React.DragEvent<HTMLDivElement>) {
     event.preventDefault()
     const fromId = event.dataTransfer.getData('text/plain') || draggedNoteId
-    if (fromId) reorderNotes(fromId, noteId)
+    if (fromId) {
+      const nextOrder = reorderNotes(fromId, noteId)
+      if (nextOrder) {
+        persistNotesOrder(nextOrder).catch(async (error) => {
+          const message = getApiErrorMessage(error, 'Não foi possível salvar a ordem.')
+          setError(message)
+          toast.error(message)
+          try {
+            await loadNotes()
+          } catch {}
+        })
+      }
+    }
     setDraggedNoteId(null)
     setDragOverNoteId(null)
   }

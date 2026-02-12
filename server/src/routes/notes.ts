@@ -12,7 +12,7 @@ router.get('/', requireAuth, async (req, res) => {
   }
   const notes = await prisma.note.findMany({
     where: { userId },
-    orderBy: { updatedAt: 'desc' },
+    orderBy: [{ sortOrder: 'desc' }, { updatedAt: 'desc' }],
   })
 
   return res.json(notes)
@@ -35,10 +35,51 @@ router.post('/', requireAuth, async (req, res) => {
       userId,
       title: title.trim(),
       content: content?.trim() || '',
+      sortOrder:
+        ((await prisma.note.aggregate({
+          where: { userId },
+          _max: { sortOrder: true },
+        }))._max.sortOrder ?? 0) + 1,
     },
   })
 
   return res.status(201).json(note)
+})
+
+// PUT /api/notes/reorder
+router.put('/reorder', requireAuth, async (req, res) => {
+  const userId = req.userId
+  if (!userId) {
+    return res.status(401).json({ message: 'Token inválido.' })
+  }
+
+  const { ids } = req.body as { ids?: string[] }
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ message: 'Lista de IDs inválida.' })
+  }
+
+  const uniqueIds = Array.from(new Set(ids))
+  if (uniqueIds.length !== ids.length) {
+    return res.status(400).json({ message: 'IDs duplicados na ordenação.' })
+  }
+
+  const ownedCount = await prisma.note.count({
+    where: { userId, id: { in: ids } },
+  })
+  if (ownedCount !== ids.length) {
+    return res.status(400).json({ message: 'Uma ou mais notas são inválidas.' })
+  }
+
+  await prisma.$transaction(
+    ids.map((id, index) =>
+      prisma.note.update({
+        where: { id },
+        data: { sortOrder: ids.length - index },
+      }),
+    ),
+  )
+
+  return res.status(204).send()
 })
 
 // PATCH /api/notes/:id

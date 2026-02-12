@@ -215,8 +215,9 @@ export default function TasksSection() {
   }
 
   function reorderTasks(fromId: string, toId: string) {
-    if (fromId === toId) return
+    if (fromId === toId) return null
 
+    let nextOrder: string[] | null = null
     setTasks((current) => {
       const fromIndex = current.findIndex((task) => task.id === fromId)
       const toIndex = current.findIndex((task) => task.id === toId)
@@ -225,8 +226,19 @@ export default function TasksSection() {
       const next = [...current]
       const [moved] = next.splice(fromIndex, 1)
       next.splice(toIndex, 0, moved)
+      nextOrder = next.map((task) => task.id)
       return next
     })
+    return nextOrder
+  }
+
+  async function loadTasks() {
+    const { data } = await http.get<Task[]>('/tasks')
+    setTasks(data)
+  }
+
+  async function persistTasksOrder(ids: string[]) {
+    await http.put('/tasks/reorder', { ids })
   }
 
   function handleDragStart(taskId: string, event: React.DragEvent<HTMLDivElement>) {
@@ -243,7 +255,19 @@ export default function TasksSection() {
   function handleDrop(taskId: string, event: React.DragEvent<HTMLDivElement>) {
     event.preventDefault()
     const fromId = event.dataTransfer.getData('text/plain') || draggedTaskId
-    if (fromId) reorderTasks(fromId, taskId)
+    if (fromId) {
+      const nextOrder = reorderTasks(fromId, taskId)
+      if (nextOrder) {
+        persistTasksOrder(nextOrder).catch(async (error) => {
+          const message = getApiErrorMessage(error, 'Não foi possível salvar a ordem.')
+          setError(message)
+          toast.error(message)
+          try {
+            await loadTasks()
+          } catch {}
+        })
+      }
+    }
     setDraggedTaskId(null)
     setDragOverTaskId(null)
   }

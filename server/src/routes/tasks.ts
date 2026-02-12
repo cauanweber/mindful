@@ -12,7 +12,7 @@ router.get('/', requireAuth, async (req, res) => {
   }
   const tasks = await prisma.task.findMany({
     where: { userId },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ sortOrder: 'desc' }, { createdAt: 'desc' }],
   })
 
   return res.json(tasks)
@@ -40,10 +40,51 @@ router.post('/', requireAuth, async (req, res) => {
       title: title.trim(),
       dueDate: dueDate ? new Date(dueDate) : null,
       priority: priority || 'MEDIUM',
+      sortOrder:
+        ((await prisma.task.aggregate({
+          where: { userId },
+          _max: { sortOrder: true },
+        }))._max.sortOrder ?? 0) + 1,
     },
   })
 
   return res.status(201).json(task)
+})
+
+// PUT /api/tasks/reorder
+router.put('/reorder', requireAuth, async (req, res) => {
+  const userId = req.userId
+  if (!userId) {
+    return res.status(401).json({ message: 'Token inválido.' })
+  }
+
+  const { ids } = req.body as { ids?: string[] }
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ message: 'Lista de IDs inválida.' })
+  }
+
+  const uniqueIds = Array.from(new Set(ids))
+  if (uniqueIds.length !== ids.length) {
+    return res.status(400).json({ message: 'IDs duplicados na ordenação.' })
+  }
+
+  const ownedCount = await prisma.task.count({
+    where: { userId, id: { in: ids } },
+  })
+  if (ownedCount !== ids.length) {
+    return res.status(400).json({ message: 'Uma ou mais tarefas são inválidas.' })
+  }
+
+  await prisma.$transaction(
+    ids.map((id, index) =>
+      prisma.task.update({
+        where: { id },
+        data: { sortOrder: ids.length - index },
+      }),
+    ),
+  )
+
+  return res.status(204).send()
 })
 
 // PATCH /api/tasks/:id
