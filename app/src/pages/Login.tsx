@@ -50,7 +50,14 @@ export default function Login() {
         className="w-full max-w-md"
       >
         <div className="text-center mb-12">
-          <h1 className="mb-3 text-[2.5rem] tracking-[-0.02em]">Mindful</h1>
+          <div className="mb-3 flex items-center justify-center gap-3">
+            <img
+              src="/logo.jpeg"
+              alt="Mindful"
+              className="h-10 w-10 rounded-lg object-cover border border-border"
+            />
+            <h1 className="text-[2.5rem] tracking-[-0.02em]">Mindful</h1>
+          </div>
           <p className="text-muted-foreground text-[0.9375rem]">
             Seu espaço pessoal para clareza e foco
           </p>
