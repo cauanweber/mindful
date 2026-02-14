@@ -7,6 +7,7 @@ import useIsMobile from '../hooks/useIsMobile'
 import { getApiErrorMessage } from '../utils/apiError'
 import { useToast } from '../context/ToastContext'
 import SectionState from '../components/SectionState'
+import { getDiaryTodayData, setDiaryTodayData } from '../services/dashboardData'
 
 function todayISO() {
   const now = new Date()
@@ -32,7 +33,7 @@ export default function DiarySection() {
 
     async function loadEntry() {
       try {
-        const { data } = await http.get<DiaryEntry | null>('/diary/today')
+        const data = await getDiaryTodayData()
         if (active && data) {
           setEntry({
             id: data.id,
@@ -65,6 +66,7 @@ export default function DiarySection() {
         content: entry.content,
       })
       setEntry({ id: data.id, date: data.date, content: data.content })
+      setDiaryTodayData(data)
       setSaved(true)
       setError('')
       toast.success('Diário salvo.')

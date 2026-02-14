@@ -7,6 +7,7 @@ import useIsMobile from '../hooks/useIsMobile'
 import { getApiErrorMessage } from '../utils/apiError'
 import { useToast } from '../context/ToastContext'
 import SectionState from '../components/SectionState'
+import { getTasksData, setTasksData } from '../services/dashboardData'
 
 const PRIORITY_OPTIONS = [
   { value: 'HIGH', label: 'Alta', className: 'bg-red-50 text-red-700 border-red-200' },
@@ -83,7 +84,7 @@ export default function TasksSection() {
 
     async function loadTasks() {
       try {
-        const { data } = await http.get<Task[]>('/tasks')
+        const data = await getTasksData()
         if (active) setTasks(data)
       } catch (error) {
         if (active) {
@@ -136,6 +137,7 @@ export default function TasksSection() {
       })
 
       setTasks([data, ...tasks])
+      setTasksData([data, ...tasks])
       setTitle('')
       setPriority('MEDIUM')
       setDueDate('')
@@ -155,7 +157,9 @@ export default function TasksSection() {
       const { data } = await http.patch<Task>(`/tasks/${task.id}`, {
         completed: !task.completed,
       })
-      setTasks(tasks.map((item) => (item.id === task.id ? data : item)))
+      const next = tasks.map((item) => (item.id === task.id ? data : item))
+      setTasks(next)
+      setTasksData(next)
       setError('')
     } catch (error) {
       const message = getApiErrorMessage(error, 'Não foi possível atualizar a tarefa.')
@@ -190,7 +194,9 @@ export default function TasksSection() {
         dueDate: editDueDate || null,
         priority: editPriority,
       })
-      setTasks(tasks.map((item) => (item.id === task.id ? data : item)))
+      const next = tasks.map((item) => (item.id === task.id ? data : item))
+      setTasks(next)
+      setTasksData(next)
       cancelEdit()
       setError('')
       toast.success('Tarefa atualizada.')
@@ -204,7 +210,9 @@ export default function TasksSection() {
   async function removeTask(task: Task) {
     try {
       await http.delete(`/tasks/${task.id}`)
-      setTasks(tasks.filter((item) => item.id !== task.id))
+      const next = tasks.filter((item) => item.id !== task.id)
+      setTasks(next)
+      setTasksData(next)
       setError('')
       toast.success('Tarefa removida.')
     } catch (error) {
@@ -225,12 +233,14 @@ export default function TasksSection() {
     const [moved] = next.splice(fromIndex, 1)
     next.splice(toIndex, 0, moved)
     setTasks(next)
+    setTasksData(next)
     return next.map((task) => task.id)
   }
 
   async function loadTasks() {
-    const { data } = await http.get<Task[]>('/tasks')
+    const data = await getTasksData({ force: true })
     setTasks(data)
+    setTasksData(data)
   }
 
   async function persistTasksOrder(ids: string[]) {

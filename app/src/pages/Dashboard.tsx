@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
-import http from '../services/http'
 import DiarySection from '../sections/DiarySection'
 import NotesSection from '../sections/NotesSection'
 import TasksSection from '../sections/TasksSection'
 import WeeklyGoalsSection from '../sections/WeeklyGoalsSection'
 import ProgressPanel from '../components/dashboard/ProgressPanel'
-import type { Task } from '../types/task'
-import type { WeeklyGoal } from '../types/weeklyGoal'
-import type { Note } from '../types/note'
-import type { DiaryEntry } from '../types/diary'
 import useMediaQuery from '../hooks/useMediaQuery'
+import {
+  getDiaryTodayData,
+  getNotesData,
+  getTasksData,
+  getWeeklyGoalsData,
+  getWeekStartISO,
+} from '../services/dashboardData'
 
 export default function Dashboard() {
   const [summary, setSummary] = useState({
@@ -34,19 +36,16 @@ export default function Dashboard() {
 
     async function loadSummary() {
       try {
-        const [tasksRes, goalsRes, notesRes, diaryRes] = await Promise.all([
-          http.get<Task[]>('/tasks'),
-          http.get<{ weekStart: string; goals: WeeklyGoal[] }>('/weekly-goals'),
-          http.get<Note[]>('/notes'),
-          http.get<DiaryEntry | null>('/diary/today'),
+        const [tasks, goalsRes, notes, diary] = await Promise.all([
+          getTasksData(),
+          getWeeklyGoalsData(getWeekStartISO()),
+          getNotesData(),
+          getDiaryTodayData(),
         ])
 
         if (!active) return
 
-        const tasks = tasksRes.data
-        const goals = goalsRes.data.goals
-        const notes = notesRes.data
-        const diary = diaryRes.data
+        const goals = goalsRes.goals
 
         setSummary({
           tasksTotal: tasks.length,

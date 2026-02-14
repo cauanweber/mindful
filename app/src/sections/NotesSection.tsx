@@ -7,6 +7,7 @@ import useIsMobile from '../hooks/useIsMobile'
 import { getApiErrorMessage } from '../utils/apiError'
 import { useToast } from '../context/ToastContext'
 import SectionState from '../components/SectionState'
+import { getNotesData, setNotesData } from '../services/dashboardData'
 
 const NOTE_COLORS = [
   { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-900' },
@@ -34,7 +35,7 @@ export default function NotesSection() {
 
     async function loadNotes() {
       try {
-        const { data } = await http.get<Note[]>('/notes')
+        const data = await getNotesData()
         if (active) setNotes(data)
       } catch (error) {
         if (active) {
@@ -63,7 +64,9 @@ export default function NotesSection() {
         content: content.trim(),
       })
 
-      setNotes([data, ...notes])
+      const next = [data, ...notes]
+      setNotes(next)
+      setNotesData(next)
       setTitle('')
       setContent('')
       setError('')
@@ -98,7 +101,9 @@ export default function NotesSection() {
         title: editTitle.trim(),
         content: editContent.trim(),
       })
-      setNotes(notes.map((item) => (item.id === note.id ? data : item)))
+      const next = notes.map((item) => (item.id === note.id ? data : item))
+      setNotes(next)
+      setNotesData(next)
       cancelEdit()
       setError('')
       toast.success('Nota atualizada.')
@@ -112,7 +117,9 @@ export default function NotesSection() {
   async function removeNote(note: Note) {
     try {
       await http.delete(`/notes/${note.id}`)
-      setNotes(notes.filter((item) => item.id !== note.id))
+      const next = notes.filter((item) => item.id !== note.id)
+      setNotes(next)
+      setNotesData(next)
       setError('')
       toast.success('Nota removida.')
     } catch (error) {
@@ -133,12 +140,14 @@ export default function NotesSection() {
     const [moved] = next.splice(fromIndex, 1)
     next.splice(toIndex, 0, moved)
     setNotes(next)
+    setNotesData(next)
     return next.map((note) => note.id)
   }
 
   async function loadNotes() {
-    const { data } = await http.get<Note[]>('/notes')
+    const data = await getNotesData({ force: true })
     setNotes(data)
+    setNotesData(data)
   }
 
   async function persistNotesOrder(ids: string[]) {

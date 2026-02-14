@@ -7,16 +7,11 @@ import useIsMobile from '../hooks/useIsMobile'
 import { getApiErrorMessage } from '../utils/apiError'
 import { useToast } from '../context/ToastContext'
 import SectionState from '../components/SectionState'
-
-function weekStartISO() {
-  const now = new Date()
-  const day = now.getDay()
-  const diff = now.getDate() - day + (day === 0 ? -6 : 1)
-  const monday = new Date(now)
-  monday.setDate(diff)
-  monday.setHours(0, 0, 0, 0)
-  return monday.toISOString().slice(0, 10)
-}
+import {
+  getWeekStartISO,
+  getWeeklyGoalsData,
+  setWeeklyGoalsData,
+} from '../services/dashboardData'
 
 export default function WeeklyGoalsSection() {
   const isMobile = useIsMobile()
@@ -25,17 +20,14 @@ export default function WeeklyGoalsSection() {
   const [title, setTitle] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const weekStart = useMemo(() => weekStartISO(), [])
+  const weekStart = useMemo(() => getWeekStartISO(), [])
 
   useEffect(() => {
     let active = true
 
     async function loadGoals() {
       try {
-        const { data } = await http.get<{ weekStart: string; goals: WeeklyGoal[] }>(
-          '/weekly-goals',
-          { params: { weekStart } },
-        )
+        const data = await getWeeklyGoalsData(weekStart)
         if (active) setGoals(data.goals)
       } catch (error) {
         if (active) {
@@ -63,7 +55,9 @@ export default function WeeklyGoalsSection() {
         title: title.trim(),
         weekStart,
       })
-      setGoals([data, ...goals])
+      const next = [data, ...goals]
+      setGoals(next)
+      setWeeklyGoalsData(weekStart, { weekStart, goals: next })
       setTitle('')
       setError('')
       toast.success('Meta criada.')
@@ -79,7 +73,9 @@ export default function WeeklyGoalsSection() {
       const { data } = await http.patch<WeeklyGoal>(`/weekly-goals/${goal.id}`, {
         done: !goal.done,
       })
-      setGoals(goals.map((item) => (item.id === goal.id ? data : item)))
+      const next = goals.map((item) => (item.id === goal.id ? data : item))
+      setGoals(next)
+      setWeeklyGoalsData(weekStart, { weekStart, goals: next })
       setError('')
     } catch (error) {
       const message = getApiErrorMessage(error, 'Não foi possível atualizar a meta.')
@@ -91,7 +87,9 @@ export default function WeeklyGoalsSection() {
   async function removeGoal(goal: WeeklyGoal) {
     try {
       await http.delete(`/weekly-goals/${goal.id}`)
-      setGoals(goals.filter((item) => item.id !== goal.id))
+      const next = goals.filter((item) => item.id !== goal.id)
+      setGoals(next)
+      setWeeklyGoalsData(weekStart, { weekStart, goals: next })
       setError('')
       toast.success('Meta removida.')
     } catch (error) {
