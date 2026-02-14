@@ -274,4 +274,4 @@ http://localhost:4173
 * For real production use, it is recommended to add monitoring, audit logs, and security headers.
 
 ## License
-No license file is defined yet. If you plan to publish publicly, add a `LICENSE` file.
+This project is distributed under the “Attribution Required” license (author credit required).
