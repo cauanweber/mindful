@@ -37,6 +37,7 @@ This project was built for portfolio purposes and daily personal use, highlighti
 * TypeScript
 * Tailwind CSS
 * React Router DOM
+* TanStack Query
 * Axios
 * Motion (animations)
 * Lucide Icons
@@ -51,8 +52,6 @@ This project was built for portfolio purposes and daily personal use, highlighti
 * JWT (JSON Web Token)
 * BCrypt
 * PostgreSQL
-* Prisma Adapter PG
-* pg (PostgreSQL driver)
 
 ### Database
 
@@ -64,6 +63,7 @@ This project was built for portfolio purposes and daily personal use, highlighti
 * Docker Compose
 * Prisma Migrate
 * ESLint
+* Vitest (basic tests)
 
 ## 🧱 Architecture
 
@@ -106,7 +106,9 @@ src/
 │ ├─ SectionState.tsx
 │ └─ dashboard/
 │   ├─ DashboardHeader.tsx
-│   └─ ProgressPanel.tsx
+│   ├─ ProgressPanel.tsx
+│   ├─ TaskItem.tsx
+│   └─ NoteCard.tsx
 ├─ context/
 │ ├─ AuthContext.tsx
 │ └─ ToastContext.tsx
@@ -118,6 +120,7 @@ src/
 │ └─ AuthLayout.tsx
 ├─ pages/
 │ ├─ Dashboard.tsx
+│ ├─ Debug.tsx
 │ ├─ Login.tsx
 │ ├─ Register.tsx
 │ └─ NotFound.tsx
@@ -129,9 +132,12 @@ src/
 │ ├─ TasksSection.tsx
 │ ├─ NotesSection.tsx
 │ └─ WeeklyGoalsSection.tsx
+├─ lib/
+│ └─ queryClient.ts
 ├─ services/
 │ ├─ auth.ts
-│ └─ http.ts
+│ ├─ http.ts
+│ └─ dashboardQueries.ts
 ├─ types/
 │ ├─ diary.ts
 │ ├─ task.ts
@@ -177,7 +183,7 @@ cd server
 npm install
 ```
 
-Rename `.env.example` to `.env`:
+Create `server/.env`:
 ```bash
 PORT=3000            # API port
 DATABASE_URL=...     # PostgreSQL connection string
@@ -213,7 +219,7 @@ cd app
 npm install
 ```
 
-Rename `.env.example` to `.env`:
+Create `app/.env`:
 ```bash
 VITE_API_URL=... # API base URL used by the frontend
 ```
@@ -268,4 +274,4 @@ http://localhost:4173
 * For real production use, it is recommended to add monitoring, audit logs, and security headers.
 
 ## License
-This project is distributed under the “Attribution Required” license (author credit required).
+No license file is defined yet. If you plan to publish publicly, add a `LICENSE` file.
