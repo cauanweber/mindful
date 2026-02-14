@@ -1,4 +1,4 @@
-# 🧠 Mindful
+![Mindful Logo](assets/logo_with_text.gif)
 
 A **fullstack personal organizer** focused on **clarity and execution**, with authentication and a dashboard centered on four core blocks: **Diary**, **Tasks**, **Notes**, and **Weekly Goals**.
 
