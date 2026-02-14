@@ -13,6 +13,11 @@ const tasksCache: CacheEntry<Task[]> = {}
 const notesCache: CacheEntry<Note[]> = {}
 const diaryTodayCache: CacheEntry<DiaryEntry | null> = {}
 const weeklyGoalsCache = new Map<string, CacheEntry<{ weekStart: string; goals: WeeklyGoal[] }>>()
+const listeners = new Set<() => void>()
+
+function notifyChange() {
+  listeners.forEach((listener) => listener())
+}
 
 function getOrCreate<T>(
   cache: CacheEntry<T>,
@@ -31,6 +36,7 @@ function getOrCreate<T>(
     .then((data) => {
       cache.data = data
       cache.promise = undefined
+      notifyChange()
       return data
     })
     .catch((error) => {
@@ -66,6 +72,7 @@ export function getTasksData(options?: { force?: boolean }) {
 export function setTasksData(data: Task[]) {
   tasksCache.data = data
   tasksCache.promise = undefined
+  notifyChange()
 }
 
 export function getNotesData(options?: { force?: boolean }) {
@@ -82,6 +89,7 @@ export function getNotesData(options?: { force?: boolean }) {
 export function setNotesData(data: Note[]) {
   notesCache.data = data
   notesCache.promise = undefined
+  notifyChange()
 }
 
 export function getDiaryTodayData(options?: { force?: boolean }) {
@@ -98,6 +106,7 @@ export function getDiaryTodayData(options?: { force?: boolean }) {
 export function setDiaryTodayData(data: DiaryEntry | null) {
   diaryTodayCache.data = data
   diaryTodayCache.promise = undefined
+  notifyChange()
 }
 
 export function getWeeklyGoalsData(weekStart = getWeekStartISO(), options?: { force?: boolean }) {
@@ -124,4 +133,12 @@ export function setWeeklyGoalsData(weekStart: string, data: { weekStart: string;
   existing.data = data
   existing.promise = undefined
   weeklyGoalsCache.set(key, existing)
+  notifyChange()
+}
+
+export function subscribeDashboardData(listener: () => void) {
+  listeners.add(listener)
+  return () => {
+    listeners.delete(listener)
+  }
 }

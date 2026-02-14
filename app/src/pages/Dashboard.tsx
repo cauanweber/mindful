@@ -8,6 +8,7 @@ import useMediaQuery from '../hooks/useMediaQuery'
 import {
   getDiaryTodayData,
   getNotesData,
+  subscribeDashboardData,
   getTasksData,
   getWeeklyGoalsData,
   getWeekStartISO,
@@ -33,12 +34,13 @@ export default function Dashboard() {
 
   useEffect(() => {
     let active = true
+    const weekStart = getWeekStartISO()
 
     async function loadSummary() {
       try {
         const [tasks, goalsRes, notes, diary] = await Promise.all([
           getTasksData(),
-          getWeeklyGoalsData(getWeekStartISO()),
+          getWeeklyGoalsData(weekStart),
           getNotesData(),
           getDiaryTodayData(),
         ])
@@ -61,9 +63,13 @@ export default function Dashboard() {
     }
 
     loadSummary()
+    const unsubscribe = subscribeDashboardData(() => {
+      loadSummary()
+    })
 
     return () => {
       active = false
+      unsubscribe()
     }
   }, [])
 

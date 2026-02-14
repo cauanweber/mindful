@@ -50,9 +50,10 @@ export default function ProgressPanel({
     },
   ]
 
-  const overallProgress = Math.round(
-    stats.reduce((sum, stat) => sum + stat.percentage, 0) / stats.length,
-  )
+  const activeStats = stats.filter((stat) => stat.label === 'Diário preenchido' || stat.total > 0)
+  const overallProgress = activeStats.length
+    ? Math.round(activeStats.reduce((sum, stat) => sum + stat.percentage, 0) / activeStats.length)
+    : 0
 
   return (
     <motion.div
