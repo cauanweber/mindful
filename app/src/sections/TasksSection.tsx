@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { DragEvent } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { CheckSquare, Plus } from 'lucide-react'
 import { m } from 'motion/react'
 import type { Task } from '../types/task'
@@ -8,7 +9,7 @@ import useIsMobile from '../hooks/useIsMobile'
 import { getApiErrorMessage } from '../utils/apiError'
 import { useToast } from '../context/ToastContext'
 import SectionState from '../components/SectionState'
-import { getTasksData, setTasksData } from '../services/dashboardData'
+import { dashboardKeys, fetchTasks } from '../services/dashboardQueries'
 import TaskItem from '../components/dashboard/TaskItem'
 
 const PRIORITY_OPTIONS = [
@@ -64,12 +65,20 @@ const GROUP_LABELS: Record<string, string> = {
 export default function TasksSection() {
   const isMobile = useIsMobile()
   const toast = useToast()
-  const [tasks, setTasks] = useState<Task[]>([])
+  const queryClient = useQueryClient()
+  const {
+    data: tasks = [],
+    isLoading: loading,
+    error: tasksLoadError,
+    refetch: refetchTasks,
+  } = useQuery<Task[]>({
+    queryKey: dashboardKeys.tasks,
+    queryFn: fetchTasks,
+  })
   const [focusToday, setFocusToday] = useState(false)
   const [title, setTitle] = useState('')
   const [priority, setPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('MEDIUM')
   const [dueDate, setDueDate] = useState('')
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState('')
@@ -82,29 +91,11 @@ export default function TasksSection() {
   const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null)
 
   useEffect(() => {
-    let active = true
-
-    async function loadTasks() {
-      try {
-        const data = await getTasksData()
-        if (active) setTasks(data)
-      } catch (error) {
-        if (active) {
-          const message = getApiErrorMessage(error, 'Não foi possível carregar as tarefas.')
-          setError(message)
-          toast.error(message)
-        }
-      } finally {
-        if (active) setLoading(false)
-      }
-    }
-
-    loadTasks()
-
-    return () => {
-      active = false
-    }
-  }, [])
+    if (!tasksLoadError) return
+    const message = getApiErrorMessage(tasksLoadError, 'Não foi possível carregar as tarefas.')
+    setError((current) => current || message)
+    toast.error(message)
+  }, [tasksLoadError, toast])
 
   const groupedTasks = useMemo(() => {
     const groups: Record<string, Task[]> = {
@@ -138,9 +129,8 @@ export default function TasksSection() {
         priority,
       })
 
-      setTasks((prev) => {
+      queryClient.setQueryData<Task[]>(dashboardKeys.tasks, (prev: Task[] = []) => {
         const next = [data, ...prev]
-        setTasksData(next)
         return next
       })
       setTitle('')
@@ -155,16 +145,15 @@ export default function TasksSection() {
       setError(message)
       toast.error(message)
     }
-  }, [dueDate, priority, title, toast])
+  }, [dueDate, priority, queryClient, title, toast])
 
   const toggleTask = useCallback(async (task: Task) => {
     try {
       const { data } = await http.patch<Task>(`/tasks/${task.id}`, {
         completed: !task.completed,
       })
-      setTasks((prev) => {
+      queryClient.setQueryData<Task[]>(dashboardKeys.tasks, (prev: Task[] = []) => {
         const next = prev.map((item) => (item.id === task.id ? data : item))
-        setTasksData(next)
         return next
       })
       setError('')
@@ -173,7 +162,7 @@ export default function TasksSection() {
       setError(message)
       toast.error(message)
     }
-  }, [toast])
+  }, [queryClient, toast])
 
   const startEdit = useCallback((task: Task) => {
     setEditingId(task.id)
@@ -201,9 +190,8 @@ export default function TasksSection() {
         dueDate: editDueDate || null,
         priority: editPriority,
       })
-      setTasks((prev) => {
+      queryClient.setQueryData<Task[]>(dashboardKeys.tasks, (prev: Task[] = []) => {
         const next = prev.map((item) => (item.id === task.id ? data : item))
-        setTasksData(next)
         return next
       })
       cancelEdit()
@@ -214,14 +202,13 @@ export default function TasksSection() {
       setError(message)
       toast.error(message)
     }
-  }, [cancelEdit, editDueDate, editPriority, editTitle, toast])
+  }, [cancelEdit, editDueDate, editPriority, editTitle, queryClient, toast])
 
   const removeTask = useCallback(async (task: Task) => {
     try {
       await http.delete(`/tasks/${task.id}`)
-      setTasks((prev) => {
+      queryClient.setQueryData<Task[]>(dashboardKeys.tasks, (prev: Task[] = []) => {
         const next = prev.filter((item) => item.id !== task.id)
-        setTasksData(next)
         return next
       })
       setError('')
@@ -231,14 +218,14 @@ export default function TasksSection() {
       setError(message)
       toast.error(message)
     }
-  }, [toast])
+  }, [queryClient, toast])
 
   const reorderTasks = useCallback((fromId: string, toId: string) => {
     if (fromId === toId) return null
 
     let nextOrder: string[] | null = null
 
-    setTasks((prev) => {
+    queryClient.setQueryData<Task[]>(dashboardKeys.tasks, (prev: Task[] = []) => {
       const fromIndex = prev.findIndex((task) => task.id === fromId)
       const toIndex = prev.findIndex((task) => task.id === toId)
       if (fromIndex < 0 || toIndex < 0) return prev
@@ -247,18 +234,15 @@ export default function TasksSection() {
       const [moved] = next.splice(fromIndex, 1)
       next.splice(toIndex, 0, moved)
       nextOrder = next.map((task) => task.id)
-      setTasksData(next)
       return next
     })
 
     return nextOrder
-  }, [])
+  }, [queryClient])
 
   const refreshTasks = useCallback(async () => {
-    const data = await getTasksData({ force: true })
-    setTasks(data)
-    setTasksData(data)
-  }, [])
+    await refetchTasks()
+  }, [refetchTasks])
 
   const persistTasksOrder = useCallback(async (ids: string[]) => {
     await http.put('/tasks/reorder', { ids })

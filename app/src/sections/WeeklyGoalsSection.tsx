@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Flag, Plus } from 'lucide-react'
 import { AnimatePresence, m } from 'motion/react'
 import type { WeeklyGoal } from '../types/weeklyGoal'
@@ -8,44 +9,34 @@ import { getApiErrorMessage } from '../utils/apiError'
 import { useToast } from '../context/ToastContext'
 import SectionState from '../components/SectionState'
 import {
+  dashboardKeys,
+  fetchWeeklyGoals,
   getWeekStartISO,
-  getWeeklyGoalsData,
-  setWeeklyGoalsData,
-} from '../services/dashboardData'
+} from '../services/dashboardQueries'
 
 export default function WeeklyGoalsSection() {
   const isMobile = useIsMobile()
   const toast = useToast()
-  const [goals, setGoals] = useState<WeeklyGoal[]>([])
-  const [title, setTitle] = useState('')
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const queryClient = useQueryClient()
   const weekStart = useMemo(() => getWeekStartISO(), [])
+  const {
+    data: goalsResponse,
+    isLoading: loading,
+    error: goalsLoadError,
+  } = useQuery<{ weekStart: string; goals: WeeklyGoal[] }>({
+    queryKey: dashboardKeys.weeklyGoals(weekStart),
+    queryFn: () => fetchWeeklyGoals(weekStart),
+  })
+  const goals = goalsResponse?.goals ?? []
+  const [title, setTitle] = useState('')
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    let active = true
-
-    async function loadGoals() {
-      try {
-        const data = await getWeeklyGoalsData(weekStart)
-        if (active) setGoals(data.goals)
-      } catch (error) {
-        if (active) {
-          const message = getApiErrorMessage(error, 'Não foi possível carregar as metas.')
-          setError(message)
-          toast.error(message)
-        }
-      } finally {
-        if (active) setLoading(false)
-      }
-    }
-
-    loadGoals()
-
-    return () => {
-      active = false
-    }
-  }, [weekStart])
+    if (!goalsLoadError) return
+    const message = getApiErrorMessage(goalsLoadError, 'Não foi possível carregar as metas.')
+    setError((current) => current || message)
+    toast.error(message)
+  }, [goalsLoadError, toast])
 
   async function handleAdd() {
     if (!title.trim()) return
@@ -55,9 +46,13 @@ export default function WeeklyGoalsSection() {
         title: title.trim(),
         weekStart,
       })
-      const next = [data, ...goals]
-      setGoals(next)
-      setWeeklyGoalsData(weekStart, { weekStart, goals: next })
+      queryClient.setQueryData<{ weekStart: string; goals: WeeklyGoal[] }>(
+        dashboardKeys.weeklyGoals(weekStart),
+        (prev: { weekStart: string; goals: WeeklyGoal[] } | undefined) => {
+          const nextGoals = [data, ...(prev?.goals ?? [])]
+          return { weekStart, goals: nextGoals }
+        },
+      )
       setTitle('')
       setError('')
       toast.success('Meta criada.')
@@ -73,9 +68,15 @@ export default function WeeklyGoalsSection() {
       const { data } = await http.patch<WeeklyGoal>(`/weekly-goals/${goal.id}`, {
         done: !goal.done,
       })
-      const next = goals.map((item) => (item.id === goal.id ? data : item))
-      setGoals(next)
-      setWeeklyGoalsData(weekStart, { weekStart, goals: next })
+      queryClient.setQueryData<{ weekStart: string; goals: WeeklyGoal[] }>(
+        dashboardKeys.weeklyGoals(weekStart),
+        (prev: { weekStart: string; goals: WeeklyGoal[] } | undefined) => {
+          const nextGoals = (prev?.goals ?? []).map((item) =>
+            item.id === goal.id ? data : item,
+          )
+          return { weekStart, goals: nextGoals }
+        },
+      )
       setError('')
     } catch (error) {
       const message = getApiErrorMessage(error, 'Não foi possível atualizar a meta.')
@@ -87,9 +88,13 @@ export default function WeeklyGoalsSection() {
   async function removeGoal(goal: WeeklyGoal) {
     try {
       await http.delete(`/weekly-goals/${goal.id}`)
-      const next = goals.filter((item) => item.id !== goal.id)
-      setGoals(next)
-      setWeeklyGoalsData(weekStart, { weekStart, goals: next })
+      queryClient.setQueryData<{ weekStart: string; goals: WeeklyGoal[] }>(
+        dashboardKeys.weeklyGoals(weekStart),
+        (prev: { weekStart: string; goals: WeeklyGoal[] } | undefined) => {
+          const nextGoals = (prev?.goals ?? []).filter((item) => item.id !== goal.id)
+          return { weekStart, goals: nextGoals }
+        },
+      )
       setError('')
       toast.success('Meta removida.')
     } catch (error) {

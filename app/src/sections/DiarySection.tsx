@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { BookOpen, Calendar, Plus } from 'lucide-react'
 import { AnimatePresence, m } from 'motion/react'
 import type { DiaryEntry } from '../types/diary'
@@ -7,7 +8,7 @@ import useIsMobile from '../hooks/useIsMobile'
 import { getApiErrorMessage } from '../utils/apiError'
 import { useToast } from '../context/ToastContext'
 import SectionState from '../components/SectionState'
-import { getDiaryTodayData, setDiaryTodayData } from '../services/dashboardData'
+import { dashboardKeys, fetchDiaryToday } from '../services/dashboardQueries'
 
 function todayISO() {
   const now = new Date()
@@ -17,47 +18,40 @@ function todayISO() {
 export default function DiarySection() {
   const isMobile = useIsMobile()
   const toast = useToast()
+  const queryClient = useQueryClient()
   const today = useMemo(() => todayISO(), [])
+  const {
+    data: diaryData,
+    isLoading: loading,
+    error: diaryLoadError,
+  } = useQuery<DiaryEntry | null>({
+    queryKey: dashboardKeys.diaryToday,
+    queryFn: fetchDiaryToday,
+  })
   const [entry, setEntry] = useState<DiaryEntry>({
     id: 'today',
     date: today,
     content: '',
   })
   const [saved, setSaved] = useState(false)
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    let active = true
+    if (!diaryData) return
+    setEntry({
+      id: diaryData.id,
+      date: diaryData.date,
+      content: diaryData.content,
+    })
+  }, [diaryData])
 
-    async function loadEntry() {
-      try {
-        const data = await getDiaryTodayData()
-        if (active && data) {
-          setEntry({
-            id: data.id,
-            date: data.date,
-            content: data.content,
-          })
-        }
-      } catch (error) {
-        if (active) {
-          const message = getApiErrorMessage(error, 'Não foi possível carregar o diário.')
-          setError(message)
-          toast.error(message)
-        }
-      } finally {
-        if (active) setLoading(false)
-      }
-    }
-
-    loadEntry()
-
-    return () => {
-      active = false
-    }
-  }, [])
+  useEffect(() => {
+    if (!diaryLoadError) return
+    const message = getApiErrorMessage(diaryLoadError, 'Não foi possível carregar o diário.')
+    setError((current) => current || message)
+    toast.error(message)
+  }, [diaryLoadError, toast])
 
   async function handleSave() {
     try {
@@ -66,7 +60,7 @@ export default function DiarySection() {
         content: entry.content,
       })
       setEntry({ id: data.id, date: data.date, content: data.content })
-      setDiaryTodayData(data)
+      queryClient.setQueryData(dashboardKeys.diaryToday, data)
       setSaved(true)
       setError('')
       toast.success('Diário salvo.')

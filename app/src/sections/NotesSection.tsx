@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { DragEvent } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, StickyNote } from 'lucide-react'
 import { AnimatePresence, m } from 'motion/react'
 import type { Note } from '../types/note'
@@ -8,7 +9,7 @@ import useIsMobile from '../hooks/useIsMobile'
 import { getApiErrorMessage } from '../utils/apiError'
 import { useToast } from '../context/ToastContext'
 import SectionState from '../components/SectionState'
-import { getNotesData, setNotesData } from '../services/dashboardData'
+import { dashboardKeys, fetchNotes } from '../services/dashboardQueries'
 import NoteCard from '../components/dashboard/NoteCard'
 
 const NOTE_COLORS = [
@@ -21,10 +22,18 @@ const NOTE_COLORS = [
 export default function NotesSection() {
   const isMobile = useIsMobile()
   const toast = useToast()
-  const [notes, setNotes] = useState<Note[]>([])
+  const queryClient = useQueryClient()
+  const {
+    data: notes = [],
+    isLoading: loading,
+    error: notesLoadError,
+    refetch: refetchNotes,
+  } = useQuery<Note[]>({
+    queryKey: dashboardKeys.notes,
+    queryFn: fetchNotes,
+  })
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState('')
@@ -33,29 +42,11 @@ export default function NotesSection() {
   const [dragOverNoteId, setDragOverNoteId] = useState<string | null>(null)
 
   useEffect(() => {
-    let active = true
-
-    async function loadNotes() {
-      try {
-        const data = await getNotesData()
-        if (active) setNotes(data)
-      } catch (error) {
-        if (active) {
-          const message = getApiErrorMessage(error, 'Não foi possível carregar as notas.')
-          setError(message)
-          toast.error(message)
-        }
-      } finally {
-        if (active) setLoading(false)
-      }
-    }
-
-    loadNotes()
-
-    return () => {
-      active = false
-    }
-  }, [toast])
+    if (!notesLoadError) return
+    const message = getApiErrorMessage(notesLoadError, 'Não foi possível carregar as notas.')
+    setError((current) => current || message)
+    toast.error(message)
+  }, [notesLoadError, toast])
 
   const notesWithColor = useMemo(
     () => notes.map((note, index) => ({ note, color: NOTE_COLORS[index % NOTE_COLORS.length] })),
@@ -71,9 +62,8 @@ export default function NotesSection() {
         content: content.trim(),
       })
 
-      setNotes((prev) => {
+      queryClient.setQueryData<Note[]>(dashboardKeys.notes, (prev: Note[] = []) => {
         const next = [data, ...prev]
-        setNotesData(next)
         return next
       })
       setTitle('')
@@ -85,7 +75,7 @@ export default function NotesSection() {
       setError(message)
       toast.error(message)
     }
-  }, [content, title, toast])
+  }, [content, queryClient, title, toast])
 
   const startEdit = useCallback((note: Note) => {
     setEditingId(note.id)
@@ -112,9 +102,8 @@ export default function NotesSection() {
           content: editContent.trim(),
         })
 
-        setNotes((prev) => {
+        queryClient.setQueryData<Note[]>(dashboardKeys.notes, (prev: Note[] = []) => {
           const next = prev.map((item) => (item.id === note.id ? data : item))
-          setNotesData(next)
           return next
         })
         cancelEdit()
@@ -126,15 +115,14 @@ export default function NotesSection() {
         toast.error(message)
       }
     },
-    [cancelEdit, editContent, editTitle, toast],
+    [cancelEdit, editContent, editTitle, queryClient, toast],
   )
 
   const removeNote = useCallback(async (note: Note) => {
     try {
       await http.delete(`/notes/${note.id}`)
-      setNotes((prev) => {
+      queryClient.setQueryData<Note[]>(dashboardKeys.notes, (prev: Note[] = []) => {
         const next = prev.filter((item) => item.id !== note.id)
-        setNotesData(next)
         return next
       })
       setError('')
@@ -144,14 +132,14 @@ export default function NotesSection() {
       setError(message)
       toast.error(message)
     }
-  }, [toast])
+  }, [queryClient, toast])
 
   const reorderNotes = useCallback((fromId: string, toId: string) => {
     if (fromId === toId) return null
 
     let nextOrder: string[] | null = null
 
-    setNotes((prev) => {
+    queryClient.setQueryData<Note[]>(dashboardKeys.notes, (prev: Note[] = []) => {
       const fromIndex = prev.findIndex((note) => note.id === fromId)
       const toIndex = prev.findIndex((note) => note.id === toId)
       if (fromIndex < 0 || toIndex < 0) return prev
@@ -160,18 +148,15 @@ export default function NotesSection() {
       const [moved] = next.splice(fromIndex, 1)
       next.splice(toIndex, 0, moved)
       nextOrder = next.map((note) => note.id)
-      setNotesData(next)
       return next
     })
 
     return nextOrder
-  }, [])
+  }, [queryClient])
 
   const refreshNotes = useCallback(async () => {
-    const data = await getNotesData({ force: true })
-    setNotes(data)
-    setNotesData(data)
-  }, [])
+    await refetchNotes()
+  }, [refetchNotes])
 
   const persistNotesOrder = useCallback(async (ids: string[]) => {
     await http.put('/notes/reorder', { ids })
