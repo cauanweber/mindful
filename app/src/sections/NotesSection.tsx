@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
-import { Edit2, GripVertical, Plus, StickyNote, Trash2 } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { DragEvent } from 'react'
+import { Plus, StickyNote } from 'lucide-react'
 import { AnimatePresence, m } from 'motion/react'
 import type { Note } from '../types/note'
 import http from '../services/http'
@@ -8,6 +9,7 @@ import { getApiErrorMessage } from '../utils/apiError'
 import { useToast } from '../context/ToastContext'
 import SectionState from '../components/SectionState'
 import { getNotesData, setNotesData } from '../services/dashboardData'
+import NoteCard from '../components/dashboard/NoteCard'
 
 const NOTE_COLORS = [
   { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-900' },
@@ -53,9 +55,14 @@ export default function NotesSection() {
     return () => {
       active = false
     }
-  }, [])
+  }, [toast])
 
-  async function handleAdd() {
+  const notesWithColor = useMemo(
+    () => notes.map((note, index) => ({ note, color: NOTE_COLORS[index % NOTE_COLORS.length] })),
+    [notes],
+  )
+
+  const handleAdd = useCallback(async () => {
     if (!title.trim() && !content.trim()) return
 
     try {
@@ -64,9 +71,11 @@ export default function NotesSection() {
         content: content.trim(),
       })
 
-      const next = [data, ...notes]
-      setNotes(next)
-      setNotesData(next)
+      setNotes((prev) => {
+        const next = [data, ...prev]
+        setNotesData(next)
+        return next
+      })
       setTitle('')
       setContent('')
       setError('')
@@ -76,50 +85,58 @@ export default function NotesSection() {
       setError(message)
       toast.error(message)
     }
-  }
+  }, [content, title, toast])
 
-  function startEdit(note: Note) {
+  const startEdit = useCallback((note: Note) => {
     setEditingId(note.id)
     setEditTitle(note.title)
     setEditContent(note.content)
-  }
+  }, [])
 
-  function cancelEdit() {
+  const cancelEdit = useCallback(() => {
     setEditingId(null)
     setEditTitle('')
     setEditContent('')
-  }
+  }, [])
 
-  async function saveEdit(note: Note) {
-    if (!editTitle.trim()) {
-      setError('Título obrigatório.')
-      return
-    }
+  const saveEdit = useCallback(
+    async (note: Note) => {
+      if (!editTitle.trim()) {
+        setError('Título obrigatório.')
+        return
+      }
 
-    try {
-      const { data } = await http.patch<Note>(`/notes/${note.id}`, {
-        title: editTitle.trim(),
-        content: editContent.trim(),
-      })
-      const next = notes.map((item) => (item.id === note.id ? data : item))
-      setNotes(next)
-      setNotesData(next)
-      cancelEdit()
-      setError('')
-      toast.success('Nota atualizada.')
-    } catch (error) {
-      const message = getApiErrorMessage(error, 'Não foi possível atualizar a nota.')
-      setError(message)
-      toast.error(message)
-    }
-  }
+      try {
+        const { data } = await http.patch<Note>(`/notes/${note.id}`, {
+          title: editTitle.trim(),
+          content: editContent.trim(),
+        })
 
-  async function removeNote(note: Note) {
+        setNotes((prev) => {
+          const next = prev.map((item) => (item.id === note.id ? data : item))
+          setNotesData(next)
+          return next
+        })
+        cancelEdit()
+        setError('')
+        toast.success('Nota atualizada.')
+      } catch (error) {
+        const message = getApiErrorMessage(error, 'Não foi possível atualizar a nota.')
+        setError(message)
+        toast.error(message)
+      }
+    },
+    [cancelEdit, editContent, editTitle, toast],
+  )
+
+  const removeNote = useCallback(async (note: Note) => {
     try {
       await http.delete(`/notes/${note.id}`)
-      const next = notes.filter((item) => item.id !== note.id)
-      setNotes(next)
-      setNotesData(next)
+      setNotes((prev) => {
+        const next = prev.filter((item) => item.id !== note.id)
+        setNotesData(next)
+        return next
+      })
       setError('')
       toast.success('Nota removida.')
     } catch (error) {
@@ -127,45 +144,51 @@ export default function NotesSection() {
       setError(message)
       toast.error(message)
     }
-  }
+  }, [toast])
 
-  function reorderNotes(fromId: string, toId: string) {
+  const reorderNotes = useCallback((fromId: string, toId: string) => {
     if (fromId === toId) return null
 
-    const fromIndex = notes.findIndex((note) => note.id === fromId)
-    const toIndex = notes.findIndex((note) => note.id === toId)
-    if (fromIndex < 0 || toIndex < 0) return null
+    let nextOrder: string[] | null = null
 
-    const next = [...notes]
-    const [moved] = next.splice(fromIndex, 1)
-    next.splice(toIndex, 0, moved)
-    setNotes(next)
-    setNotesData(next)
-    return next.map((note) => note.id)
-  }
+    setNotes((prev) => {
+      const fromIndex = prev.findIndex((note) => note.id === fromId)
+      const toIndex = prev.findIndex((note) => note.id === toId)
+      if (fromIndex < 0 || toIndex < 0) return prev
 
-  async function loadNotes() {
+      const next = [...prev]
+      const [moved] = next.splice(fromIndex, 1)
+      next.splice(toIndex, 0, moved)
+      nextOrder = next.map((note) => note.id)
+      setNotesData(next)
+      return next
+    })
+
+    return nextOrder
+  }, [])
+
+  const refreshNotes = useCallback(async () => {
     const data = await getNotesData({ force: true })
     setNotes(data)
     setNotesData(data)
-  }
+  }, [])
 
-  async function persistNotesOrder(ids: string[]) {
+  const persistNotesOrder = useCallback(async (ids: string[]) => {
     await http.put('/notes/reorder', { ids })
-  }
+  }, [])
 
-  function handleDragStart(noteId: string, event: React.DragEvent<HTMLDivElement>) {
+  const handleDragStart = useCallback((noteId: string, event: DragEvent<HTMLDivElement>) => {
     event.dataTransfer.effectAllowed = 'move'
     event.dataTransfer.setData('text/plain', noteId)
     setDraggedNoteId(noteId)
-  }
+  }, [])
 
-  function handleDragOver(noteId: string, event: React.DragEvent<HTMLDivElement>) {
+  const handleDragOver = useCallback((noteId: string, event: DragEvent<HTMLDivElement>) => {
     event.preventDefault()
     if (dragOverNoteId !== noteId) setDragOverNoteId(noteId)
-  }
+  }, [dragOverNoteId])
 
-  function handleDrop(noteId: string, event: React.DragEvent<HTMLDivElement>) {
+  const handleDrop = useCallback((noteId: string, event: DragEvent<HTMLDivElement>) => {
     event.preventDefault()
     const fromId = event.dataTransfer.getData('text/plain') || draggedNoteId
     if (fromId) {
@@ -176,19 +199,21 @@ export default function NotesSection() {
           setError(message)
           toast.error(message)
           try {
-            await loadNotes()
-          } catch {}
+            await refreshNotes()
+          } catch {
+            // ignore refresh error to keep current UI state
+          }
         })
       }
     }
     setDraggedNoteId(null)
     setDragOverNoteId(null)
-  }
+  }, [draggedNoteId, persistNotesOrder, refreshNotes, reorderNotes, toast])
 
-  function handleDragEnd() {
+  const handleDragEnd = useCallback(() => {
     setDraggedNoteId(null)
     setDragOverNoteId(null)
-  }
+  }, [])
 
   return (
     <m.div
@@ -247,95 +272,28 @@ export default function NotesSection() {
           <SectionState type="empty" message="Nenhuma nota criada." />
         )}
         <AnimatePresence>
-          {notes.map((note, index) => {
-            const color = NOTE_COLORS[index % NOTE_COLORS.length]
-
-            return (
-              <m.div
-                key={note.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.25 }}
-                className="rounded-xl"
-              >
-                <div
-                  draggable={editingId !== note.id}
-                  onDragStart={(event) => handleDragStart(note.id, event)}
-                  onDragOver={(event) => handleDragOver(note.id, event)}
-                  onDrop={(event) => handleDrop(note.id, event)}
-                  onDragEnd={handleDragEnd}
-                  className={`p-4 rounded-xl border transition-all duration-200 ${color.bg} ${color.border} ${color.text} ${
-                    dragOverNoteId === note.id ? 'ring-2 ring-accent/30' : ''
-                  } ${draggedNoteId === note.id ? 'opacity-75' : ''}`}
-                >
-                {editingId === note.id ? (
-                  <div className="space-y-3">
-                    <input
-                      value={editTitle}
-                      onChange={(event) => setEditTitle(event.target.value)}
-                      className="w-full px-3 py-2 bg-white/70 border border-border rounded-lg"
-                    />
-                    <textarea
-                      value={editContent}
-                      onChange={(event) => setEditContent(event.target.value)}
-                      rows={3}
-                      className="w-full px-3 py-2 bg-white/70 border border-border rounded-lg resize-none"
-                    />
-                    <div className="flex gap-2">
-                      <button type="button" onClick={() => saveEdit(note)}>
-                        Salvar
-                      </button>
-                      <button type="button" onClick={cancelEdit}>
-                        Cancelar
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="flex items-start gap-2 flex-1 min-w-0">
-                        <span
-                          className="text-muted-foreground/70 cursor-grab active:cursor-grabbing shrink-0 mt-0.5"
-                          title="Arrastar nota"
-                        >
-                          <GripVertical size={16} />
-                        </span>
-                        <h4 className="font-semibold leading-snug break-words [overflow-wrap:anywhere] min-w-0">
-                          {note.title}
-                        </h4>
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => startEdit(note)}
-                          className="p-1 rounded-md hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-                          aria-label={`Editar nota "${note.title}"`}
-                        >
-                          <Edit2 size={14} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => removeNote(note)}
-                          className="p-1 rounded-md hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-                          aria-label={`Remover nota "${note.title}"`}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </div>
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
-                      {note.content || 'Sem conteúdo'}
-                    </p>
-                    <p className="text-xs opacity-70 mt-2">
-                      Atualizado em {new Date(note.updatedAt).toLocaleString()}
-                    </p>
-                  </>
-                )}
-                </div>
-              </m.div>
-            )
-          })}
+          {notesWithColor.map(({ note, color }) => (
+            <NoteCard
+              key={note.id}
+              note={note}
+              color={color}
+              isEditing={editingId === note.id}
+              isDragged={draggedNoteId === note.id}
+              isDragOver={dragOverNoteId === note.id}
+              editTitle={editTitle}
+              editContent={editContent}
+              onStartEdit={startEdit}
+              onSaveEdit={saveEdit}
+              onRemove={removeNote}
+              onCancelEdit={cancelEdit}
+              onEditTitleChange={setEditTitle}
+              onEditContentChange={setEditContent}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              onDragEnd={handleDragEnd}
+            />
+          ))}
         </AnimatePresence>
       </div>
     </m.div>

@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Check, CheckSquare, GripVertical, Pencil, Plus, Trash2 } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { DragEvent } from 'react'
+import { CheckSquare, Plus } from 'lucide-react'
 import { m } from 'motion/react'
 import type { Task } from '../types/task'
 import http from '../services/http'
@@ -8,6 +9,7 @@ import { getApiErrorMessage } from '../utils/apiError'
 import { useToast } from '../context/ToastContext'
 import SectionState from '../components/SectionState'
 import { getTasksData, setTasksData } from '../services/dashboardData'
+import TaskItem from '../components/dashboard/TaskItem'
 
 const PRIORITY_OPTIONS = [
   { value: 'HIGH', label: 'Alta', className: 'bg-red-50 text-red-700 border-red-200' },
@@ -126,7 +128,7 @@ export default function TasksSection() {
     return groups
   }, [tasks, focusToday])
 
-  async function handleAdd() {
+  const handleAdd = useCallback(async () => {
     if (!title.trim()) return
 
     try {
@@ -136,8 +138,11 @@ export default function TasksSection() {
         priority,
       })
 
-      setTasks([data, ...tasks])
-      setTasksData([data, ...tasks])
+      setTasks((prev) => {
+        const next = [data, ...prev]
+        setTasksData(next)
+        return next
+      })
       setTitle('')
       setPriority('MEDIUM')
       setDueDate('')
@@ -150,39 +155,41 @@ export default function TasksSection() {
       setError(message)
       toast.error(message)
     }
-  }
+  }, [dueDate, priority, title, toast])
 
-  async function toggleTask(task: Task) {
+  const toggleTask = useCallback(async (task: Task) => {
     try {
       const { data } = await http.patch<Task>(`/tasks/${task.id}`, {
         completed: !task.completed,
       })
-      const next = tasks.map((item) => (item.id === task.id ? data : item))
-      setTasks(next)
-      setTasksData(next)
+      setTasks((prev) => {
+        const next = prev.map((item) => (item.id === task.id ? data : item))
+        setTasksData(next)
+        return next
+      })
       setError('')
     } catch (error) {
       const message = getApiErrorMessage(error, 'Não foi possível atualizar a tarefa.')
       setError(message)
       toast.error(message)
     }
-  }
+  }, [toast])
 
-  function startEdit(task: Task) {
+  const startEdit = useCallback((task: Task) => {
     setEditingId(task.id)
     setEditTitle(task.title)
     setEditDueDate(task.dueDate ? task.dueDate.slice(0, 10) : '')
     setEditPriority(task.priority || 'MEDIUM')
-  }
+  }, [])
 
-  function cancelEdit() {
+  const cancelEdit = useCallback(() => {
     setEditingId(null)
     setEditTitle('')
     setEditDueDate('')
     setEditPriority('MEDIUM')
-  }
+  }, [])
 
-  async function saveEdit(task: Task) {
+  const saveEdit = useCallback(async (task: Task) => {
     if (!editTitle.trim()) {
       setError('Título obrigatório.')
       return
@@ -194,9 +201,11 @@ export default function TasksSection() {
         dueDate: editDueDate || null,
         priority: editPriority,
       })
-      const next = tasks.map((item) => (item.id === task.id ? data : item))
-      setTasks(next)
-      setTasksData(next)
+      setTasks((prev) => {
+        const next = prev.map((item) => (item.id === task.id ? data : item))
+        setTasksData(next)
+        return next
+      })
       cancelEdit()
       setError('')
       toast.success('Tarefa atualizada.')
@@ -205,14 +214,16 @@ export default function TasksSection() {
       setError(message)
       toast.error(message)
     }
-  }
+  }, [cancelEdit, editDueDate, editPriority, editTitle, toast])
 
-  async function removeTask(task: Task) {
+  const removeTask = useCallback(async (task: Task) => {
     try {
       await http.delete(`/tasks/${task.id}`)
-      const next = tasks.filter((item) => item.id !== task.id)
-      setTasks(next)
-      setTasksData(next)
+      setTasks((prev) => {
+        const next = prev.filter((item) => item.id !== task.id)
+        setTasksData(next)
+        return next
+      })
       setError('')
       toast.success('Tarefa removida.')
     } catch (error) {
@@ -220,45 +231,51 @@ export default function TasksSection() {
       setError(message)
       toast.error(message)
     }
-  }
+  }, [toast])
 
-  function reorderTasks(fromId: string, toId: string) {
+  const reorderTasks = useCallback((fromId: string, toId: string) => {
     if (fromId === toId) return null
 
-    const fromIndex = tasks.findIndex((task) => task.id === fromId)
-    const toIndex = tasks.findIndex((task) => task.id === toId)
-    if (fromIndex < 0 || toIndex < 0) return null
+    let nextOrder: string[] | null = null
 
-    const next = [...tasks]
-    const [moved] = next.splice(fromIndex, 1)
-    next.splice(toIndex, 0, moved)
-    setTasks(next)
-    setTasksData(next)
-    return next.map((task) => task.id)
-  }
+    setTasks((prev) => {
+      const fromIndex = prev.findIndex((task) => task.id === fromId)
+      const toIndex = prev.findIndex((task) => task.id === toId)
+      if (fromIndex < 0 || toIndex < 0) return prev
 
-  async function loadTasks() {
+      const next = [...prev]
+      const [moved] = next.splice(fromIndex, 1)
+      next.splice(toIndex, 0, moved)
+      nextOrder = next.map((task) => task.id)
+      setTasksData(next)
+      return next
+    })
+
+    return nextOrder
+  }, [])
+
+  const refreshTasks = useCallback(async () => {
     const data = await getTasksData({ force: true })
     setTasks(data)
     setTasksData(data)
-  }
+  }, [])
 
-  async function persistTasksOrder(ids: string[]) {
+  const persistTasksOrder = useCallback(async (ids: string[]) => {
     await http.put('/tasks/reorder', { ids })
-  }
+  }, [])
 
-  function handleDragStart(taskId: string, event: React.DragEvent<HTMLDivElement>) {
+  const handleDragStart = useCallback((taskId: string, event: DragEvent<HTMLDivElement>) => {
     event.dataTransfer.effectAllowed = 'move'
     event.dataTransfer.setData('text/plain', taskId)
     setDraggedTaskId(taskId)
-  }
+  }, [])
 
-  function handleDragOver(taskId: string, event: React.DragEvent<HTMLDivElement>) {
+  const handleDragOver = useCallback((taskId: string, event: DragEvent<HTMLDivElement>) => {
     event.preventDefault()
     if (dragOverTaskId !== taskId) setDragOverTaskId(taskId)
-  }
+  }, [dragOverTaskId])
 
-  function handleDrop(taskId: string, event: React.DragEvent<HTMLDivElement>) {
+  const handleDrop = useCallback((taskId: string, event: DragEvent<HTMLDivElement>) => {
     event.preventDefault()
     const fromId = event.dataTransfer.getData('text/plain') || draggedTaskId
     if (fromId) {
@@ -269,19 +286,19 @@ export default function TasksSection() {
           setError(message)
           toast.error(message)
           try {
-            await loadTasks()
+            await refreshTasks()
           } catch {}
         })
       }
     }
     setDraggedTaskId(null)
     setDragOverTaskId(null)
-  }
+  }, [draggedTaskId, reorderTasks, persistTasksOrder, toast, refreshTasks])
 
-  function handleDragEnd() {
+  const handleDragEnd = useCallback(() => {
     setDraggedTaskId(null)
     setDragOverTaskId(null)
-  }
+  }, [])
 
   const completedCount = tasks.filter((task) => task.completed).length
   const visibleTasksCount = Object.values(groupedTasks).reduce(
@@ -386,148 +403,31 @@ export default function TasksSection() {
               </p>
               <m.div layout="position" className="space-y-2">
                 {groupItems.map((task) => (
-                  <m.div
+                  <TaskItem
                     key={task.id}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    className="rounded-xl"
-                  >
-                    <div
-                      draggable={editingId !== task.id}
-                      onDragStart={(event) => handleDragStart(task.id, event)}
-                      onDragOver={(event) => handleDragOver(task.id, event)}
-                      onDrop={(event) => handleDrop(task.id, event)}
-                      onDragEnd={handleDragEnd}
-                      className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 ${
-                        dragOverTaskId === task.id
-                          ? 'border-accent/60 bg-accent/[0.04]'
-                          : 'border-border hover:border-accent/40'
-                      } ${draggedTaskId === task.id ? 'opacity-70' : ''}`}
-                      style={
-                        lastCreatedId === task.id
-                          ? { boxShadow: '0 0 0 1px rgba(37, 99, 235, 0.15)' }
-                          : undefined
-                      }
-                    >
-                      <span
-                        className="text-muted-foreground/70 cursor-grab active:cursor-grabbing shrink-0"
-                        title="Arrastar tarefa"
-                      >
-                        <GripVertical size={16} />
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => toggleTask(task)}
-                        className={`w-6 h-6 rounded-lg border flex items-center justify-center transition-all duration-200 ${
-                          task.completed
-                            ? 'bg-accent border-accent text-accent-foreground'
-                            : 'border-muted-foreground/40 text-muted-foreground'
-                        } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2`}
-                        aria-label={
-                          task.completed
-                            ? `Marcar tarefa "${task.title}" como não concluída`
-                            : `Marcar tarefa "${task.title}" como concluída`
-                        }
-                        aria-pressed={task.completed}
-                      >
-                        {task.completed && <Check size={14} />}
-                      </button>
-
-                      {editingId === task.id ? (
-                        <div className="flex-1 grid gap-2">
-                          <input
-                            value={editTitle}
-                            onChange={(event) => setEditTitle(event.target.value)}
-                            placeholder="Título"
-                            className="px-3 py-2 bg-secondary/50 border border-input rounded-lg"
-                          />
-                          <select
-                            value={editPriority}
-                            onChange={(event) =>
-                              setEditPriority(event.target.value as 'LOW' | 'MEDIUM' | 'HIGH')
-                            }
-                            className="px-3 py-2 bg-secondary/50 border border-input rounded-lg text-sm"
-                          >
-                            {PRIORITY_OPTIONS.map((option) => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-                          <input
-                            type="date"
-                            value={editDueDate}
-                            onChange={(event) => setEditDueDate(event.target.value)}
-                            className="px-3 py-2 bg-secondary/50 border border-input rounded-lg"
-                          />
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => saveEdit(task)}
-                              className="text-sm"
-                            >
-                              Salvar
-                            </button>
-                            <button type="button" onClick={cancelEdit} className="text-sm">
-                              Cancelar
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <p
-                              className={`text-sm font-medium truncate ${
-                                task.completed ? 'line-through text-muted-foreground' : ''
-                              }`}
-                              title={task.title}
-                            >
-                              {task.title}
-                            </p>
-                            {(() => {
-                              const option =
-                                PRIORITY_OPTIONS.find((item) => item.value === task.priority) ||
-                                PRIORITY_OPTIONS[1]
-                              return (
-                                <span
-                                  className={`text-[11px] px-2 py-0.5 rounded-full border ${option.className} shrink-0`}
-                                >
-                                  {option.label}
-                                </span>
-                              )
-                            })()}
-                          </div>
-                          {task.dueDate && (
-                            <p className="text-xs text-muted-foreground">
-                              {formatShortDate(task.dueDate)}
-                            </p>
-                          )}
-                        </div>
-                      )}
-
-                      {editingId !== task.id && (
-                        <div className="flex items-center gap-2 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => startEdit(task)}
-                            className="p-2 rounded-lg hover:bg-secondary transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-                            aria-label={`Editar tarefa "${task.title}"`}
-                          >
-                            <Pencil size={16} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => removeTask(task)}
-                            className="p-2 rounded-lg hover:bg-secondary transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-                            aria-label={`Remover tarefa "${task.title}"`}
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </m.div>
+                    task={task}
+                    isEditing={editingId === task.id}
+                    isDragged={draggedTaskId === task.id}
+                    isDragOver={dragOverTaskId === task.id}
+                    isNew={lastCreatedId === task.id}
+                    editTitle={editTitle}
+                    editDueDate={editDueDate}
+                    editPriority={editPriority}
+                    priorityOptions={PRIORITY_OPTIONS}
+                    formatShortDate={formatShortDate}
+                    onToggle={toggleTask}
+                    onStartEdit={startEdit}
+                    onSaveEdit={saveEdit}
+                    onRemove={removeTask}
+                    onCancelEdit={cancelEdit}
+                    onEditTitleChange={setEditTitle}
+                    onEditDueDateChange={setEditDueDate}
+                    onEditPriorityChange={setEditPriority}
+                    onDragStart={handleDragStart}
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                    onDragEnd={handleDragEnd}
+                  />
                 ))}
               </m.div>
             </div>
