@@ -11,15 +11,19 @@ interface ProgressPanelProps {
   diaryFilled: boolean
 }
 
-export default function ProgressPanel({
+type ProgressDataInput = Pick<
+  ProgressPanelProps,
+  'tasksDone' | 'tasksTotal' | 'goalsDone' | 'goalsTotal' | 'notesTotal' | 'diaryFilled'
+>
+
+export function buildProgressData({
   tasksDone,
   tasksTotal,
   goalsDone,
   goalsTotal,
   notesTotal,
   diaryFilled,
-}: ProgressPanelProps) {
-  const isMobile = useIsMobile()
+}: ProgressDataInput) {
   const stats = [
     {
       label: 'Tarefas concluídas',
@@ -54,6 +58,27 @@ export default function ProgressPanel({
   const overallProgress = activeStats.length
     ? Math.round(activeStats.reduce((sum, stat) => sum + stat.percentage, 0) / activeStats.length)
     : 0
+
+  return { stats, overallProgress, notesTotal }
+}
+
+export default function ProgressPanel({
+  tasksDone,
+  tasksTotal,
+  goalsDone,
+  goalsTotal,
+  notesTotal,
+  diaryFilled,
+}: ProgressPanelProps) {
+  const isMobile = useIsMobile()
+  const { stats, overallProgress } = buildProgressData({
+    tasksDone,
+    tasksTotal,
+    goalsDone,
+    goalsTotal,
+    notesTotal,
+    diaryFilled,
+  })
 
   return (
     <m.div

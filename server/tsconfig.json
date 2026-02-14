@@ -44,5 +44,6 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "moduleResolution": "bundler",
-  }
+  },
+  "exclude": ["dist", "src/**/*.test.ts"]
 }
