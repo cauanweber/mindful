@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Check, CheckSquare, GripVertical, Pencil, Plus, Trash2 } from 'lucide-react'
-import { motion } from 'motion/react'
+import { m } from 'motion/react'
 import type { Task } from '../types/task'
 import http from '../services/http'
 import useIsMobile from '../hooks/useIsMobile'
@@ -290,7 +290,7 @@ export default function TasksSection() {
   )
 
   return (
-    <motion.div
+    <m.div
       initial={isMobile ? { opacity: 0, y: 16 } : { opacity: 0, y: 12 }}
       animate={!isMobile ? { opacity: 1, y: 0 } : undefined}
       whileInView={isMobile ? { opacity: 1, y: 0 } : undefined}
@@ -349,7 +349,7 @@ export default function TasksSection() {
             onChange={(event) => setDueDate(event.target.value)}
             className="w-[150px] px-3 py-2.5 bg-secondary/50 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-transparent transition-all duration-200"
           />
-          <motion.button
+          <m.button
             type="button"
             onClick={handleAdd}
             className="w-11 h-11 rounded-full bg-accent text-accent-foreground flex items-center justify-center hover:bg-accent/90 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
@@ -357,7 +357,7 @@ export default function TasksSection() {
             aria-label="Adicionar tarefa"
           >
             <Plus size={18} />
-          </motion.button>
+          </m.button>
         </div>
       </div>
 
@@ -384,9 +384,9 @@ export default function TasksSection() {
               <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
                 {GROUP_LABELS[groupKey]}
               </p>
-              <motion.div layout="position" className="space-y-2">
+              <m.div layout="position" className="space-y-2">
                 {groupItems.map((task) => (
-                  <motion.div
+                  <m.div
                     key={task.id}
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -527,13 +527,13 @@ export default function TasksSection() {
                         </div>
                       )}
                     </div>
-                  </motion.div>
+                  </m.div>
                 ))}
-              </motion.div>
+              </m.div>
             </div>
           )
         })}
       </div>
-    </motion.div>
+    </m.div>
   )
 }

@@ -1,5 +1,5 @@
 import { Calendar, CheckCircle, Target, TrendingUp } from 'lucide-react'
-import { motion } from 'motion/react'
+import { m } from 'motion/react'
 import useIsMobile from '../../hooks/useIsMobile'
 
 interface ProgressPanelProps {
@@ -56,7 +56,7 @@ export default function ProgressPanel({
     : 0
 
   return (
-    <motion.div
+    <m.div
       initial={isMobile ? { opacity: 0, y: 16 } : { opacity: 0, y: 16 }}
       animate={!isMobile ? { opacity: 1, y: 0 } : undefined}
       whileInView={isMobile ? { opacity: 1, y: 0 } : undefined}
@@ -76,7 +76,7 @@ export default function ProgressPanel({
         </div>
       </div>
 
-      <motion.div
+      <m.div
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.1, duration: 0.35 }}
@@ -87,7 +87,7 @@ export default function ProgressPanel({
           <span className="text-sm font-semibold text-foreground">{overallProgress}%</span>
         </div>
         <div className="h-2 rounded-full bg-muted">
-          <motion.div
+          <m.div
             className="h-2 rounded-full bg-accent"
             initial={{ width: 0 }}
             animate={{ width: `${overallProgress}%` }}
@@ -97,11 +97,11 @@ export default function ProgressPanel({
         <p className="mt-3 text-xs text-muted-foreground">
           {notesTotal} notas registradas
         </p>
-      </motion.div>
+      </m.div>
 
       <div className="space-y-4">
         {stats.map((stat, index) => (
-          <motion.div
+          <m.div
             key={stat.label}
             initial={{ opacity: 0, x: -14 }}
             animate={{ opacity: 1, x: 0 }}
@@ -118,9 +118,9 @@ export default function ProgressPanel({
               </p>
             </div>
             <span className="text-sm text-muted-foreground">{stat.percentage}%</span>
-          </motion.div>
+          </m.div>
         ))}
       </div>
-    </motion.div>
+    </m.div>
   )
 }

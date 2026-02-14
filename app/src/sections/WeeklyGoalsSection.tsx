@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Flag, Plus } from 'lucide-react'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, m } from 'motion/react'
 import type { WeeklyGoal } from '../types/weeklyGoal'
 import http from '../services/http'
 import useIsMobile from '../hooks/useIsMobile'
@@ -103,7 +103,7 @@ export default function WeeklyGoalsSection() {
   const progress = goals.length ? Math.round((completedCount / goals.length) * 100) : 0
 
   return (
-    <motion.div
+    <m.div
       initial={isMobile ? { opacity: 0, y: 16 } : { opacity: 0, y: 12 }}
       animate={!isMobile ? { opacity: 1, y: 0 } : undefined}
       whileInView={isMobile ? { opacity: 1, y: 0 } : undefined}
@@ -166,7 +166,7 @@ export default function WeeklyGoalsSection() {
         )}
         <AnimatePresence>
           {goals.map((goal) => (
-            <motion.div
+            <m.div
               key={goal.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -210,10 +210,10 @@ export default function WeeklyGoalsSection() {
               >
                 Remover
               </button>
-            </motion.div>
+            </m.div>
           ))}
         </AnimatePresence>
       </div>
-    </motion.div>
+    </m.div>
   )
 }

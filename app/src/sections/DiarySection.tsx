@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { BookOpen, Calendar, Plus } from 'lucide-react'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, m } from 'motion/react'
 import type { DiaryEntry } from '../types/diary'
 import http from '../services/http'
 import useIsMobile from '../hooks/useIsMobile'
@@ -88,7 +88,7 @@ export default function DiarySection() {
   })
 
   return (
-    <motion.div
+    <m.div
       initial={isMobile ? { opacity: 0, y: 16 } : { opacity: 0, y: 12 }}
       animate={!isMobile ? { opacity: 1, y: 0 } : undefined}
       whileInView={isMobile ? { opacity: 1, y: 0 } : undefined}
@@ -129,7 +129,7 @@ export default function DiarySection() {
 
         <AnimatePresence mode="wait">
           {error && (
-            <motion.div
+            <m.div
               key="error"
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
@@ -137,10 +137,10 @@ export default function DiarySection() {
               className="text-center py-2 px-4 bg-destructive/10 text-destructive rounded-lg text-sm"
             >
               {error}
-            </motion.div>
+            </m.div>
           )}
           {saving && !error && (
-            <motion.div
+            <m.div
               key="saving"
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
@@ -148,10 +148,10 @@ export default function DiarySection() {
               className="text-center py-2 px-4 bg-muted text-muted-foreground rounded-lg text-sm"
             >
               Salvando...
-            </motion.div>
+            </m.div>
           )}
           {!saving && saved && !error && (
-            <motion.div
+            <m.div
               key="saved"
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
@@ -159,7 +159,7 @@ export default function DiarySection() {
               className="text-center py-2 px-4 bg-accent/10 text-accent rounded-lg text-sm"
             >
               Entrada salva ✓
-            </motion.div>
+            </m.div>
           )}
         </AnimatePresence>
 
@@ -173,6 +173,6 @@ export default function DiarySection() {
           <span>Salvar</span>
         </button>
       </div>
-    </motion.div>
+    </m.div>
   )
 }

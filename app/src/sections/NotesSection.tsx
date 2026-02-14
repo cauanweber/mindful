@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Edit2, GripVertical, Plus, StickyNote, Trash2 } from 'lucide-react'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, m } from 'motion/react'
 import type { Note } from '../types/note'
 import http from '../services/http'
 import useIsMobile from '../hooks/useIsMobile'
@@ -191,7 +191,7 @@ export default function NotesSection() {
   }
 
   return (
-    <motion.div
+    <m.div
       initial={isMobile ? { opacity: 0, y: 16 } : { opacity: 0, y: 12 }}
       animate={!isMobile ? { opacity: 1, y: 0 } : undefined}
       whileInView={isMobile ? { opacity: 1, y: 0 } : undefined}
@@ -251,7 +251,7 @@ export default function NotesSection() {
             const color = NOTE_COLORS[index % NOTE_COLORS.length]
 
             return (
-              <motion.div
+              <m.div
                 key={note.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -333,11 +333,11 @@ export default function NotesSection() {
                   </>
                 )}
                 </div>
-              </motion.div>
+              </m.div>
             )
           })}
         </AnimatePresence>
       </div>
-    </motion.div>
+    </m.div>
   )
 }

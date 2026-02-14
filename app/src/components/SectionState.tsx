@@ -1,5 +1,5 @@
 import { Inbox, Loader2 } from 'lucide-react'
-import { motion } from 'motion/react'
+import { m } from 'motion/react'
 
 type SectionStateProps = {
   type: 'loading' | 'empty'
@@ -10,7 +10,7 @@ export default function SectionState({ type, message }: SectionStateProps) {
   const isLoading = type === 'loading'
 
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -6 }}
@@ -24,6 +24,6 @@ export default function SectionState({ type, message }: SectionStateProps) {
         )}
         <p className="text-sm">{message}</p>
       </div>
-    </motion.div>
+    </m.div>
   )
 }
